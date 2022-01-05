@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.12)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
@@ -99,7 +99,7 @@ endif()
 function(ADD_PROJECT_LIBRARY LIBRARY_NAME)
   arch2obj(archobj_libname ${LIBRARY_NAME})
 
-  file(GLOB source_files ${SOURCE_WILDCARDS})
+  file(GLOB source_files CONFIGURE_DEPENDS ${SOURCE_WILDCARDS})
 
   set(library_files)
 
@@ -172,7 +172,7 @@ foreach(file $ENV{USERSPACE_NAMES_EXE2MINIX})
   list(APPEND MINIXFS_ARGUMENT ${file})
 endforeach(file)
 
-file(GLOB userspace_data userspace/data/*)
+file(GLOB userspace_data CONFIGURE_DEPENDS userspace/data/*)
 foreach(file ${userspace_data})
   get_filename_component(datafile ${file} NAME)
   list(APPEND MINIXFS_ARGUMENT ${file} ${datafile})
