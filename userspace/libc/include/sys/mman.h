@@ -12,6 +12,7 @@ extern "C" {
 #define PROT_WRITE    0x00000002  // ..0010
 #define PROT_EXEC     0x00000004  // ..0100
 
+#define MAP_FIXED     0x10000000  // 0001..
 #define MAP_PRIVATE   0x20000000  // 0010..
 #define MAP_SHARED    0x40000000  // 0100..
 #define MAP_ANONYMOUS 0x80000000  // 1000..
@@ -29,5 +30,3 @@ extern int mprotect(void *addr, size_t len, int prot);
 #ifdef __cplusplus
 }
 #endif
-
-
