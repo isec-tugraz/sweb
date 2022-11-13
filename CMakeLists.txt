@@ -298,6 +298,14 @@ add_custom_target(mrproper
     COMMAND cmake -DARCH=${ARCH} ${PROJECT_SOURCE_DIR} ${CMAKE_CROSS_COMPILE_FLAGS}
 )
 
+#Custom target: make cleandisk
+#Deletes the disk image so it is freshly recreated on next build
+add_custom_target(cleandisk
+    COMMENT "Removing disk image"
+    COMMAND ${CMAKE_COMMAND} -E rm -f -- ${PROJECT_BINARY_DIR}/${HDD_IMAGE_RAW}
+    COMMAND ${CMAKE_COMMAND} -E rm -f -- ${PROJECT_BINARY_DIR}/${HDD_IMAGE}
+)
+
 #Custom target: make debug
 add_custom_target(debug
     COMMAND make clean
