@@ -182,6 +182,7 @@ endforeach(file)
 #Creates the hd image and copies all files to it
 add_custom_target (hdd_image ALL
   DEPENDS kernel_to_image userspace_to_image
+  BYPRODUCTS ${HDD_IMAGE}
   COMMAND qemu-img convert -f raw -O qcow2 ${HDD_IMAGE_RAW} ${HDD_IMAGE}
 )
 
@@ -205,6 +206,7 @@ if("${ARCH}" MATCHES "arm")
 #The debug info gets extracted and linked in at the second link step
 add_custom_target (kernel_image
     DEPENDS ${FINAL_LIB_NAMES} add-dbg
+    BYPRODUCTS ${PROJECT_BINARY_DIR}/kernel.dbg
     COMMAND ${LD_EXECUTABLE} ${KERNEL_LD_ARGUMENT} ${KERNEL_IMAGE_OBJCOPY}
     COMMAND ${LD_EXECUTABLE} ${KERNEL_LD_ARGUMENT} ${ADD_LD_ARGUMENT}
     WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH}
@@ -214,6 +216,7 @@ else()
 
 add_custom_target (kernel_image
     DEPENDS ${FINAL_LIB_NAMES} add-dbg
+    BYPRODUCTS ${PROJECT_BINARY_DIR}/kernel.dbg
     COMMAND ${LD_EXECUTABLE} ${KERNEL_LD_ARGUMENT} ${KERNEL_IMAGE_OBJCOPY}
     WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH}
 )
