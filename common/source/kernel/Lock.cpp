@@ -276,13 +276,13 @@ Thread* Lock::popBackThreadFromWaitersList()
   {
     // there is more than one thread in the waiters list
     // search for the thread before the last thread in the list
-    Thread* previos;
-    for(previos = waiters_list_; previos->next_thread_in_lock_waiters_list_->next_thread_in_lock_waiters_list_ != 0;
-        previos = previos->next_thread_in_lock_waiters_list_);
+    Thread* previous;
+    for(previous = waiters_list_; previous->next_thread_in_lock_waiters_list_->next_thread_in_lock_waiters_list_ != 0;
+        previous = previous->next_thread_in_lock_waiters_list_);
 
-    thread = previos->next_thread_in_lock_waiters_list_;
+    thread = previous->next_thread_in_lock_waiters_list_;
     // remove the last element
-    ArchThreads::atomic_set((pointer&)(previos->next_thread_in_lock_waiters_list_), (pointer)(0));
+    ArchThreads::atomic_set((pointer&)(previous->next_thread_in_lock_waiters_list_), (pointer)(0));
   }
   return thread;
 }
