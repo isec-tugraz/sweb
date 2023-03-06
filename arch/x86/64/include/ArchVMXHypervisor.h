@@ -3,14 +3,14 @@
 #include "ArchHypervisor.h"
 #include "ArchVMXDefinitions.h"
 #include "ArchVMXGuest.h"
-#include "uvector.h"
+#include "umap.h"
 
 // this class represents the hypervisor guests
 // the hypervisor manages the virtualized guests
 
 class ArchVMXHypervisor : public ArchHyperVisor {
 
-    ustl::vector<ArchVMXGuest> guests_;
+    ustl::map<size_t, ArchVMXGuest> guests_;
 
   public:
     ArchVMXHypervisor();

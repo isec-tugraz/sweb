@@ -24,7 +24,8 @@ ArchVMXHypervisor::ArchVMXHypervisor()
 
 void ArchVMXHypervisor::init_guest(/*TODO*/) {
     // TODOs
-    guests_.push_back();
+    size_t id = 0;
+    guests_[id] = ArchVMXGuest();
     debug(HV_INIT, "added a guest ... TODO\n");
 
     uint64 vmx_basic = rdmsr(MSR_IA32_VMX_BASIC);
