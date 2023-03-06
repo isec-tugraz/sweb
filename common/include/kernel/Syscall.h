@@ -2,7 +2,7 @@
 
 #include <types.h>
 
-class Syscall
+class Syscall 
 {
   public:
     static size_t syscallException(size_t syscall_number, size_t arg1, size_t arg2, size_t arg3, size_t arg4, size_t arg5);
@@ -18,5 +18,7 @@ class Syscall
 
     static size_t createprocess(size_t path, size_t sleep);
     static void trace();
-};
 
+    static void hypervisor_init_guest(/*TODO*/);
+    // add additional syscalls to run a guest
+};

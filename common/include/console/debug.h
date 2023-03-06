@@ -86,3 +86,7 @@ const size_t M_STORAGE_MANAGER  = Ansi_Yellow;
 const size_t M_INODE            = Ansi_Yellow;
 const size_t M_SB               = Ansi_Yellow;
 const size_t M_ZONE             = Ansi_Yellow;
+
+//group hypervisor TODO
+const size_t HV_INIT            = Ansi_Blue    | OUTPUT_ENABLED;
+const size_t HV_TUTOR           = Ansi_Blue    | OUTPUT_ENABLED;

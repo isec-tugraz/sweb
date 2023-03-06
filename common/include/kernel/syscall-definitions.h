@@ -15,5 +15,6 @@
 #define sc_outline 105
 #define sc_sched_yield 158
 #define sc_createprocess 191
+#define sc_hypervisor_init_guest 192
 #define sc_trace 252
 
