@@ -2,12 +2,12 @@
 
 #include "ArchGuest.h"
 
-class ArchHyperVisor {
+class ArchHypervisor {
 
-    static ArchHyperVisor *instance_;
+    static ArchHypervisor *instance_;
 
   public:
-    static ArchHyperVisor *instance();
+    static ArchHypervisor *instance();
 
     virtual void init_guest(/*TODO*/) = 0;
 };

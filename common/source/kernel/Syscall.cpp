@@ -188,5 +188,5 @@ void Syscall::trace()
 void Syscall::hypervisor_init_guest()
 {
   debug(SYSCALL, "hypervisor_init_guest called ... TODO\n");
-  ArchHyperVisor::instance()->init_guest();
+  ArchHypervisor::instance()->init_guest();
 }

@@ -9,9 +9,9 @@
 
 static ArchVMXHypervisor hv;
 
-ArchHyperVisor *ArchHyperVisor::instance_ = nullptr;
+ArchHypervisor *ArchHypervisor::instance_ = nullptr;
 
-ArchHyperVisor *ArchHyperVisor::instance() {
+ArchHypervisor *ArchHypervisor::instance() {
     if ( unlikely(!instance_) )
         instance_ = new (&hv) ArchVMXHypervisor();
     return instance_;

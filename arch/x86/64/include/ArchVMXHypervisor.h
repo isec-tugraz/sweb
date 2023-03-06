@@ -8,7 +8,7 @@
 // this class represents the hypervisor guests
 // the hypervisor manages the virtualized guests
 
-class ArchVMXHypervisor : public ArchHyperVisor {
+class ArchVMXHypervisor : public ArchHypervisor {
 
     ustl::map<size_t, ArchVMXGuest> guests_;
 
