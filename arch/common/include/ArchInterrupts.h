@@ -1,6 +1,6 @@
 #pragma once
 
-#define IO_TIMEOUT (4000000)
+#define IO_TIMEOUT (400000)
 #define IRQ0_TIMER_FREQUENCY 0
 
 #include "types.h"
