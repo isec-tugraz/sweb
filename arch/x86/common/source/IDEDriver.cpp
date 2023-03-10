@@ -89,9 +89,13 @@ uint32 IDEDriver::doDeviceDetection()
       {
         outportbp(base_port + 6, (cs % 2 == 0 ? 0xA0 : 0xB0));
 
+        jiffies = 0;
+        while(inportbp(base_port + 7) & 0x80 && jiffies++ < IO_TIMEOUT);
+
         uint8 c1 = inportbp(base_port + 2);
         uint8 c2 = inportbp(base_port + 3);
 
+        debug(IDE_DRIVER, "c1 = %x, c2 = %x\n", c1, c2);
         if (c1 != 0x01 && c2 != 0x01)
           debug(IDE_DRIVER, "doDetection: Not found after reset ! \n");
         else
