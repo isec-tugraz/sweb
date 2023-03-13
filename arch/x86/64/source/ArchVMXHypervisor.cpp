@@ -38,7 +38,7 @@ void test_begin() {
 
 #define TEST_SIZE ((pointer)test_end - (pointer)test_begin)
 
-//memcpy(dest, (void*)test_begin, test_size); //to copy the code
+//memcpy(dest, (void*)test_begin, TEST_SIZE); //to copy the code
 
 
 void ArchVMXHypervisor::init_guest(/*TODO*/) {
