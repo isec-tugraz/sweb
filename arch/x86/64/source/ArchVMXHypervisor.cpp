@@ -22,6 +22,25 @@ ArchVMXHypervisor::ArchVMXHypervisor()
     debug(HV_INIT, "created ArchVMXHypervisor ... TODO\n");
 }
 
+extern "C" void test_end();
+
+__attribute__((naked))
+void test_begin() {
+  asm volatile(R"(
+  .code32
+  //your asm here
+
+  .code64
+  .global test_end
+  test_end:
+  )");
+}
+
+#define TEST_SIZE ((pointer)test_end - (pointer)test_begin)
+
+//memcpy(dest, (void*)test_begin, test_size); //to copy the code
+
+
 void ArchVMXHypervisor::init_guest(/*TODO*/) {
     // TODOs
     size_t id = 0;
@@ -33,6 +52,7 @@ void ArchVMXHypervisor::init_guest(/*TODO*/) {
     debug(HV_INIT, "vmx_basic=0x%lx\n", vmx_basic);
 
     dump_vmx_msrs();
+
 
     // will only work after setting up vmx and loading a control struct
     // dump_vmx_config();
@@ -71,7 +91,7 @@ void vmwrite(uint64 field, uint64 value) {
 
 uint64 vmread(uint64 field) {
     uint64 ret;
-    asm volatile("vmread %1, %0" : "=m"(ret) : "r"(field));
+    asm volatile("vmread %1, %0" : "=m"(ret) : "r"(field) : "cc");
     return ret;
 }
 
