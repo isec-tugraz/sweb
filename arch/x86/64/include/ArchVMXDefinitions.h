@@ -392,3 +392,5 @@ enum VmExit {
     UMWAIT,
     TPAUSE
 };
+
+const char *translateExitReason(const VmExit reason);
