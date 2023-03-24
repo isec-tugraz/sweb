@@ -67,7 +67,7 @@ int backtrace_user(pointer *call_stack, int size, Thread *thread, bool /*use_sto
 
   if (thread->user_registers_->rbp % sizeof(pointer))
   {
-    debug(BACKTRACE, "stack no aligned. this could cause serious problems\n");
+    debug(BACKTRACE, "stack not aligned. this could cause serious problems\n");
     return 0;
   }
   void *rbp = (void*)thread->user_registers_->rbp;
