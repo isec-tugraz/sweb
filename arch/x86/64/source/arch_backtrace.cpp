@@ -93,12 +93,12 @@ int backtrace_user(pointer *call_stack, int size, Thread *thread, bool /*use_sto
       CurrentFrameI)
   {
     pointer return_address;
-    if ((pointer)CurrentFrameI%PAGE_SIZE == 0) 
+    if ((pointer)CurrentFrameI%PAGE_SIZE == 0)
     {
       auto return_ptr = (pointer *)thread->loader_->arch_memory_.checkAddressValid((pointer)&CurrentFrameI->return_address);
       return_address = return_ptr ? *return_ptr : 0;
     }
-    else 
+    else
     {
       return_address = (pointer)CurrentFrameI->return_address;
     }
