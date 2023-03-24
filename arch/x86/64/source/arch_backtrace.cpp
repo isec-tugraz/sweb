@@ -65,7 +65,7 @@ int backtrace_user(pointer *call_stack, int size, Thread *thread, bool /*use_sto
   if (!call_stack || !size || !thread->user_registers_)
     return 0;
 
-  if (((thread->user_registers_->rbp+8) % (sizeof(pointer)*2)))
+  if (((thread->user_registers_->rbp+sizeof(pointer)) % (sizeof(pointer)*2)))
   {
     debug(BACKTRACE, "user space backtrace does not work with an incorrectly aligned stack\n");
     return 0;
@@ -94,7 +94,7 @@ int backtrace_user(pointer *call_stack, int size, Thread *thread, bool /*use_sto
     call_stack[i++] = (pointer)CurrentFrameI->return_address;
     CurrentFrame = CurrentFrameI->previous_frame;
 
-    if ((((pointer)CurrentFrame)+8) % (sizeof(pointer)*2))
+    if ((((pointer)CurrentFrame)+sizeof(pointer)) % (sizeof(pointer)*2))
       break;
 
     CurrentFrameI = (StackFrame*)thread->loader_->arch_memory_.checkAddressValid((pointer)CurrentFrameI->previous_frame);
