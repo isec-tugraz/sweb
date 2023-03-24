@@ -160,6 +160,12 @@ ArchMemory::~ArchMemory()
 
 pointer ArchMemory::checkAddressValid(uint64 vaddress_to_check)
 {
+  if (vaddress_to_check >= USER_BREAK && vaddress_to_check < KERNEL_START)
+  {
+    debug(A_MEMORY, "checkAddressValid %zx non-canonical -> false\n", vaddress_to_check);
+    return 0;
+  }
+
   ArchMemoryMapping m = resolveMapping(page_map_level_4_, vaddress_to_check / PAGE_SIZE);
   if (m.page != 0)
   {
