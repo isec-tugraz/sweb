@@ -84,6 +84,7 @@ int backtrace_user(pointer *call_stack, int size, Thread *thread, bool /*use_sto
 
   void *StartAddress = (void*)0x1;
   void *EndAddress = (void*)USER_BREAK;
+
   while (i < size &&
       ADDRESS_BETWEEN(CurrentFrame, StackEnd, StackStart) &&
       ADDRESS_BETWEEN(StackEnd, StartAddress, EndAddress) &&
