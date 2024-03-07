@@ -322,6 +322,9 @@ extern "C" void errorHandler(size_t num, size_t eip, size_t cs, size_t spurious)
         currentThread ? currentThread->switch_to_userspace_ : -1);
 
   const Stabs2DebugInfo* deb = kernel_debug_info;
+
+  if (currentThread == 0 && spurious) return;
+
   assert(currentThread && "there should be no fault before there is a current thread");
   assert(currentThread->kernel_registers_ && "every thread needs kernel registers");
   ArchThreadRegisters* registers_ = currentThread->kernel_registers_;

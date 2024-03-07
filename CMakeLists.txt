@@ -7,6 +7,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 set(HDD_IMAGE_RAW "SWEB-flat.vmdk")
 set(HDD_IMAGE "SWEB.qcow2")
+set(BOCHS_PATH "bochs")
 
 if ("${ARCH}" STREQUAL "")
   set (ARCH "x86/64")
