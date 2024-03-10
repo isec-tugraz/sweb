@@ -30,7 +30,7 @@ extern "C" void initialisePaging()
   //         * 8000 0000 0 to * FFFF FFFF F
   //                       binary: 100 000 000 means pml4i >= 256
 
-  // map the first and the last PM4L entry and one for the identity mapping
+  // map the first and the last PML4 entry and one for the identity mapping
   pml4[0].page_ppn = (uint64)pdpt1 / PAGE_SIZE;
   pml4[0].writeable = 1;
   pml4[0].present = 1;

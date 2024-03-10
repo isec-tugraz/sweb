@@ -428,7 +428,16 @@ UNARY_TRAIT_DEFB (has_trivial_copy_assign,	__has_trivial_assign(T));
 template <typename T, typename U> struct is_same : public false_type {};
 template <typename T> struct is_same<T,T> : public true_type {};
 
-#if __clang__	// clang has __is_convertible builtin
+#if defined __has_builtin
+  #if __has_builtin (__is_convertible)
+    #define USTL_BUILTIN__is_convertible 1
+  #endif
+#endif
+#ifndef USTL_BUILTIN__is_convertible
+  #define USTL_BUILTIN__is_convertible 0
+#endif
+
+#if __clang__ || USTL_BUILTIN__is_convertible == 1	// clang, gcc >= 13 have __is_convertible builtin
 
 template <typename F, typename T>
 struct is_convertible : public integral_constant<bool, __is_convertible(F, T)> {};
