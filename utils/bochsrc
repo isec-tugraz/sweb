@@ -36,7 +36,7 @@
 # NOTE: if you use the "wx" configuration interface, you must also use
 # the "wx" display library.
 #=======================================================================
-#config_interface: textconfig
+config_interface: textconfig
 #config_interface: win32config
 #config_interface: wx
 
@@ -80,12 +80,11 @@
 #display_library: carbon
 #display_library: macintosh
 #display_library: nogui
+display_library: sdl2
+#display_library: sdl
 #display_library: rfb, options="timeout=60" # time to wait for client
 #display_library: sdl, options="fullscreen" # startup in fullscreen mode
-#display_library: term
 #display_library: win32
-#display_library: wx
-#display_library: x
 
 #=======================================================================
 # ROMIMAGE:
@@ -189,7 +188,7 @@ romimage: file=$BXSHARE/BIOS-bochs-latest
 #  2.2.6 2.6Ghz Intel Core 2 Duo with WinXP/g++ 3.4       21 to 25 Mips
 #  2.2.6 2.1Ghz Athlon XP with Linux 2.6/g++ 3.4          12 to 15 Mips
 #=======================================================================
-#cpu: model=core2_penryn_t9600, ips=10000
+cpu: model=corei7_sandy_bridge_2600k, ips=1000000
 
 #=======================================================================
 # CPUID:
@@ -324,7 +323,7 @@ romimage: file=$BXSHARE/BIOS-bochs-latest
 #  STEPPING:
 #    Set stepping information returned by CPUID. Default stepping value is 3.
 #=======================================================================
-#cpuid: x86_64=1, mmx=1, sep=1, sse=sse4_2, apic=xapic, aes=1, movbe=1, xsave=1
+#cpuid: x86_64=1, mmx=1, sep=1, apic=xapic, vmx=1
 #cpuid: family=6, model=0x1a, stepping=5
 
 #=======================================================================
@@ -344,7 +343,7 @@ romimage: file=$BXSHARE/BIOS-bochs-latest
 # used all allocated host memory and wants more.
 #
 #=======================================================================
-memory: guest=8, host=8
+memory: guest=128, host=128
 
 #=======================================================================
 # OPTROMIMAGE[1-4]:
@@ -598,8 +597,8 @@ floppy_bootsig_check: disabled=0
 #   log: ./bochs.out
 #   log: /dev/tty
 #=======================================================================
-log: /dev/null
-#log: bochsout.txt
+#log: /dev/null
+log: bochsout.txt
 
 #=======================================================================
 # LOGPREFIX:
@@ -644,9 +643,9 @@ log: /dev/null
 # if you disable it you may get a spectacular disaster instead.
 #=======================================================================
 panic: action=ask
-error: action=ignore
-info: action=ignore
-#debug: action=ignore # report BX_DEBUG from module 'pci'
+error: action=report
+info: action=ignore, cpu0=report
+debug: action=ignore, pc_system=report
 
 #=======================================================================
 # DEBUGGER_LOG:
@@ -1121,3 +1120,6 @@ port_e9_hack: enabled=1
 #megs: 32
 #megs: 16
 #megs: 8
+
+#ldsym "kernel64.x.sym"
+#debug_symbols: file=kernel64.x.sym
