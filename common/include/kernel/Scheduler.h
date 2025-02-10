@@ -40,7 +40,6 @@ class Scheduler
     friend class CleanupThread;
 
     void cleanupDeadThreads();
-    void checkCleanupThreadState();
 
   private:
     Scheduler();
@@ -66,6 +65,8 @@ class Scheduler
     size_t block_scheduling_;
 
     size_t ticks_;
+
+    size_t unfinished_cleanup_counter_;
 
     IdleThread idle_thread_;
     CleanupThread cleanup_thread_;
