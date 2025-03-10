@@ -105,33 +105,33 @@ extern "C" void entry()
 
   PRINT("Initializing Kernel Paging Structures...\n");
   asm volatile("movl $kernel_page_directory_pointer_table - BASE + 3, kernel_page_map_level_4 - BASE\n"
-      "movl $0, kernel_page_map_level_4 - BASE + 4\n");
+      "movl $0, kernel_page_map_level_4 - BASE + 4\n" ::: "memory");
   asm volatile("movl $kernel_page_directory - BASE + 3, kernel_page_directory_pointer_table - BASE\n"
-      "movl $0, kernel_page_directory_pointer_table - BASE + 4\n");
+      "movl $0, kernel_page_directory_pointer_table - BASE + 4\n" ::: "memory");
   asm volatile("movl $0x83, kernel_page_directory - BASE\n"
-      "movl $0, kernel_page_directory - BASE + 4\n");
+      "movl $0, kernel_page_directory - BASE + 4\n" ::: "memory");
 
-  PRINT("Enable PSE and PAE...\n");
-  asm volatile("mov %cr4,%eax\n"
-      "or $0x20, %eax\n"
-      "mov %eax,%cr4\n");
+  PRINT("Enable PAE...\n");
+  asm volatile("mov %%cr4,%%eax\n"
+      "or $0x20, %%eax\n"
+      "mov %%eax,%%cr4\n" ::: "eax");
 
   PRINT("Setting CR3 Register...\n");
   asm volatile("mov %[pd],%%cr3" : : [pd]"r"(TRUNCATE(kernel_page_map_level_4)));
 
   PRINT("Enable EFER.LME and EFER.NXE...\n");
-  asm volatile("mov $0xC0000080,%ecx\n"
+  asm volatile("mov $0xC0000080,%%ecx\n"
       "rdmsr\n"
-      "or $0x900,%eax\n"
-      "wrmsr\n");
+      "or $0x900,%%eax\n"
+      "wrmsr\n" ::: "ecx", "eax", "edx");
 
   asm volatile("push $2\n"
       "popf\n");
 
   PRINT("Enable Paging...\n");
-  asm volatile("mov %cr0,%eax\n"
-      "or $0x80010001,%eax\n"
-      "mov %eax,%cr0\n");
+  asm volatile("mov %%cr0,%%eax\n"
+      "or $0x80010001,%%eax\n"
+      "mov %%eax,%%cr0\n" ::: "eax", "memory");
 
   PRINT("Setup TSS...\n");
   TSS* g_tss_p = (TSS*) TRUNCATE(&g_tss);
@@ -162,7 +162,7 @@ extern "C" void entry()
       "mov %%ax, %%ss\n"
       "mov %%ax, %%fs\n"
       "mov %%ax, %%gs\n"
-      : : "a"(KERNEL_DS));
+      : : "a"(KERNEL_DS) : "memory");
 
   PRINT("Calling entry64()...\n");
   asm volatile("ljmp %[cs],$entry64-BASE\n" : : [cs]"i"(KERNEL_CS));

@@ -91,17 +91,17 @@
 #define DBL_MIN 0
 #define FLT_MAX 0
 #define FLT_MIN 0
-#define INT_MAX 0xFFFFFFFF
-#define INT_MIN 0
+#define INT_MAX 0x7FFFFFFF
+#define INT_MIN (-INT_MAX - 1)
 #define LONG_MAX 0
 #define LONG_MIN 0
 #define UINTPTR_MAX 0xFFFFFFFF
-#define SHRT_MAX 0
-#define SHRT_MIN 0
+#define SHRT_MAX 0x7FFF
+#define SHRT_MIN (-0x8000)
 #define LDBL_MAX 0
 #define LDBL_MIN 0
 #define UINT_MAX 0xFFFFFFFF
-#define INT_MIN 0
+#define UINT_MIN 0
 #define ULONG_MAX 0xFFFFFFFF
 #define USHRT_MAX 0xFFFF
 

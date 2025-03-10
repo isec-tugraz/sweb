@@ -93,7 +93,7 @@ bool Loader::readHeaders()
 
   if(readFromBinary((char*)hdr_, 0, sizeof(Elf::Ehdr)))
   {
-    debug(LOADER, "Loader::readHeaders: ERROR! The headers could not be load.\n");
+    debug(LOADER, "Loader::readHeaders: ERROR! The headers could not be loaded.\n");
     return false;
   }
 

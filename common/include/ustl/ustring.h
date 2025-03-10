@@ -55,7 +55,7 @@ public:
     typedef ::ustl::reverse_iterator<const_iterator>	const_reverse_iterator;
     typedef utf8in_iterator<const_iterator>		utf8_iterator;
     typedef size_type		pos_type;
-    static constexpr const pos_type npos = INT_MAX;	///< Value that means the end of string.
+    static constexpr const pos_type npos = UINT_MAX;	///< Value that means the end of string.
 public:
     inline			string (void) noexcept		: memblock () { relink ("",0); }
 				string (const string& s);

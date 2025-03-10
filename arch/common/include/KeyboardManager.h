@@ -31,6 +31,24 @@ extern "C"
                               0, 0, 0, 0, 0, 0, 0, 0, \
                             }
 
+#define SHIFT_KEYS_DEF { 0, 0x1B, '!', '@', '#', '$' , '%', '^', \
+                        '&', '*', '(', ')', '_', '+', '\b', '\t', \
+                        'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', \
+                        'O', 'P', '{', '}', '\n', KBD_META_CTRL, 'A', 'S', \
+                        'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', \
+                        '"', '~', KBD_META_SHIFT, '|', 'Z', 'X', 'C', 'V', \
+                        'B', 'N', 'M', '<', '>', '?',KBD_META_SHIFT, '*', \
+                        KBD_META_LALT, ' ', KBD_META_CAPS, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, \
+                        KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KBD_META_NUM, KBD_META_SCRL, '7', \
+                        '8', '9', '-', '4', '5', '6', '+', '1', \
+                        '2', '3', '0', '.', 0, 0, 0, KEY_F11  , \
+                        KEY_F12, 0, 0, 0, 0, 0, 0, 0, \
+                        0, '\n', KBD_META_CTRL, '/', KEY_PRNT, KBD_META_RALT, 0, KEY_HOME, \
+                        KEY_UP, KEY_PGUP, KEY_LFT, KEY_RT, KEY_END, KEY_DN, KEY_PGDN, KEY_INS, \
+                        0, 0, 0, 0, 0, 0, 0, 0, \
+                        0, 0, 0, 0, 0, 0, 0, 0, \
+                      }
+
 #define E0_KEYS_DEF { 0, 0, 0, 0, 0, 0, 0, 0, \
                       0, 0, 0, 0, 0, 0, 0, 0, \
                       0, 0, 0, 0, 0, 0, 0, 0, \
@@ -194,6 +212,7 @@ class KeyboardManager
     RingBuffer<uint8> keyboard_buffer_;
 
     static uint32 const STANDARD_KEYMAP[];
+    static uint32 const SHIFT_KEYS[];
     static uint32 const E0_KEYS[];
     static uint8 const SET1_SCANCODES[];
     /**

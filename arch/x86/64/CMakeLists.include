@@ -60,8 +60,8 @@ add_custom_target(kvm
 
 # qemu: Run qemu in non debugging mode
 add_custom_target(qemu
-	COMMAND	${QEMU_BIN} ${QEMU_FLAGS_COMMON} -cpu qemu64 | tee output.log
-	COMMENT "Executing `${QEMU_BIN} ${QEMU_FLAGS_COMMON_STR} -cpu qemu64`"
+	COMMAND	${QEMU_BIN} ${QEMU_FLAGS_COMMON} -cpu qemu64,+smep | tee output.log
+	COMMENT "Executing `${QEMU_BIN} ${QEMU_FLAGS_COMMON_STR} -cpu qemu64,+smep`"
 	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 	COMMAND reset -I
 	)

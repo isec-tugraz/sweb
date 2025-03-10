@@ -69,7 +69,7 @@ void sweb_assert(const char *condition, uint32 line, const char* file)
   ArchInterrupts::disableInterrupts();
   static bool in_assert = false;
   system_state = KPANIC;
-  kprintfd("KERNEL PANIC: Assertion %s failed in File %s on Line %d\n",condition, file, line);
+  kprintfd("KERNEL PANIC: Assertion %s failed in File:Line %s:%d\n",condition, file, line);
   if (in_assert) {
     kprintfd("PANIC LOOP: How did we get here?\n");
     while(1);

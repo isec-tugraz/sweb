@@ -20,7 +20,7 @@ Superblock* DeviceFSType::readSuper(Superblock *superblock, void*) const
 
 Superblock* DeviceFSType::createSuper(uint32 __attribute__((unused)) s_dev)
 {
-  Superblock *super = DeviceFSSuperBlock::getInstance();
+  Superblock *super = DeviceFSSuperblock::getInstance();
   return super;
 }
 

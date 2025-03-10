@@ -11,6 +11,9 @@
 #include "SWEBDebugInfo.h"
 #include "PageManager.h"
 #include "KernelMemoryManager.h"
+#include "Console.h"
+
+extern Console* main_console;
 
 extern void* kernel_end_address;
 
@@ -225,10 +228,10 @@ extern "C" void entry64()
   PRINT("Initializing Kernel Paging Structures...\n");
   initialisePaging();
   PRINT("Setting CR3 Register...\n");
-  asm("mov %%rax, %%cr3" : : "a"(VIRTUAL_TO_PHYSICAL_BOOT(ArchMemory::getRootOfKernelPagingStructure())));
+  asm("mov %%rax, %%cr3" : : "a"(VIRTUAL_TO_PHYSICAL_BOOT(ArchMemory::getRootOfKernelPagingStructure())) : "memory");
   PRINT("Switch to our own stack...\n");
   asm("mov %[stack], %%rsp\n"
-      "mov %[stack], %%rbp\n" : : [stack]"i"(boot_stack + 0x4000));
+      "mov %[stack], %%rbp\n" : : [stack]"i"(boot_stack + 0x4000) : "memory");
   PRINT("Loading Long Mode Segments...\n");
 
   gdt_ptr.limit = sizeof(gdt) - 1;
@@ -239,8 +242,23 @@ extern "C" void entry64()
       "mov %%ax, %%ss\n"
       "mov %%ax, %%fs\n"
       "mov %%ax, %%gs\n"
-      : : "a"(KERNEL_DS));
+      : : "a"(KERNEL_DS) : "memory");
   asm("ltr %%ax" : : "a"(KERNEL_TSS));
+
+  PRINT("Check SMEP support...\n");
+  uint32 ebx=0;
+  asm volatile("mov $7, %%rax\n"
+               "xor %%rcx, %%rcx\n"
+               "cpuid\n"
+               :"=b"(ebx)::"rax", "rcx", "rdx");
+  if (ebx & (1<<7))
+  {
+    PRINT("Enable SMEP...\n");
+    asm volatile("mov %%cr4,%%rax\n"
+                 "or $0x100000, %%rax\n"
+                 "mov %%rax,%%cr4\n" ::: "rax", "memory");
+  }
+
   PRINT("Calling startup()...\n");
   asm("jmp *%[startup]" : : [startup]"r"(startup));
   while (1);
@@ -269,35 +287,77 @@ void ArchCommon::idle()
 #define STATS_OFFSET 22
 #define FREE_PAGES_OFFSET STATS_OFFSET + 11*2
 
-void ArchCommon::drawStat() {
-    const char* text  = "Free pages      F9 MemInfo   F10 Locks   F11 Stacktrace   F12 Threads";
-    const char* color = "xxxxxxxxxx      xx           xxx         xxx              xxx        ";
 
-    char* fb = (char*)getFBPtr();
-    size_t i = 0;
-    while(text[i]) {
-        fb[i * 2 + STATS_OFFSET] = text[i];
-        fb[i * 2 + STATS_OFFSET + 1] = (char)(color[i] == 'x' ? 0x80 : 0x08);
+void ArchCommon::drawStat()
+{
+  const char* text  = "Free pages      F9 MemInfo   F10 Locks   F11 Stacktrace   F12 Threads";
+  const char* color = "xxxxxxxxxx      xx           xxx         xxx              xxx        ";
+
+  size_t i = 0;
+  char itoa_buffer[33];
+
+  if (haveVESAConsole()) {
+    FrameBufferConsole* fb_console = static_cast<FrameBufferConsole*>(main_console);
+    if (fb_console) {
+      size_t row = 0;
+      size_t column = STATS_OFFSET - 12;
+
+      while (text[i]) {
+        uint8 state = (color[i] == 'x' ? 0x80 : 0x08); // 0x80 -> light bakground/dark text, 0x08 -> dark background/light text 
+        fb_console->consoleSetCharacter(row, column + i, text[i], state);
         i++;
+      }
+
+      memset(itoa_buffer, '\0', sizeof(itoa_buffer));
+      itoa(PageManager::instance()->getNumFreePages(), itoa_buffer, 10);
+
+      for (size_t j = 0; j < sizeof(itoa_buffer) && itoa_buffer[j] != '\0'; ++j) {
+        fb_console->consoleSetCharacter(row, column + 11 + j, itoa_buffer[j], 0x08);   
+      }
+    }
+  } 
+  else 
+  {
+    char* fb = (char*)getFBPtr();
+
+    while (text[i]) {
+      fb[i * 2 + STATS_OFFSET] = text[i];
+      fb[i * 2 + STATS_OFFSET + 1] = (char)(color[i] == 'x' ? 0x80 : 0x08);
+      i++;
     }
 
-    char itoa_buffer[33];
     memset(itoa_buffer, '\0', sizeof(itoa_buffer));
     itoa(PageManager::instance()->getNumFreePages(), itoa_buffer, 10);
 
-    for(size_t i = 0; (i < sizeof(itoa_buffer)) && (itoa_buffer[i] != '\0'); ++i)
+    for (size_t i = 0; (i < sizeof(itoa_buffer)) && (itoa_buffer[i] != '\0'); ++i) 
     {
       fb[i * 2 + FREE_PAGES_OFFSET] = itoa_buffer[i];
     }
+  }
 }
+
 
 void ArchCommon::drawHeartBeat()
 {
   const char* clock = "/-\\|";
   static uint32 heart_beat_value = 0;
-  char* fb = (char*)getFBPtr();
-  fb[0] = clock[heart_beat_value++ % 4];
-  fb[1] = (char)0x9f;
+
+  if (haveVESAConsole())
+  {
+    uint8 state = 0x9f;  
+    char heartbeat_char = clock[heart_beat_value++ % 4];
+
+    FrameBufferConsole* fb_console = static_cast<FrameBufferConsole*>(main_console);
+    if(fb_console)
+      fb_console->consoleSetCharacter(0, 0, heartbeat_char, state);
+  }
+  else 
+  {
+    char* fb = (char*)getFBPtr();
+    fb[0] = clock[heart_beat_value++ % 4];
+    fb[1] = (char)0x9f;
+  }
 
   drawStat();
 }
+

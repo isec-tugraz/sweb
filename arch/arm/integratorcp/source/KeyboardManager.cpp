@@ -6,6 +6,8 @@ uint32 const KeyboardManager::STANDARD_KEYMAP[KEY_MAPPING_SIZE] = STANDARD_KEYMA
 
 uint32 const KeyboardManager::E0_KEYS[KEY_MAPPING_SIZE] = E0_KEYS_DEF;
 
+uint32 const KeyboardManager::SHIFT_KEYS[KEY_MAPPING_SIZE] = SHIFT_KEYS_DEF;
+
 uint8 const KeyboardManager::SET1_SCANCODES[KEY_MAPPING_SIZE + 1] = {127, 67, 0, 63, 61, 59, 60, 88, 100, 68, 66, 64, 62, 15, 41, 0, 101,
                                                  56, 42, 0, 29, 16,
                                                  2, 0, 102, 0, 44, 31, 30, 17, 3, 91, 103, 46, 45, 32, 18, 5, 4, 92,
@@ -188,9 +190,8 @@ void KeyboardManager::setLEDs(void)
 
 uint32 KeyboardManager::convertScancode(uint8 scancode)
 {
-  uint32 simple_key = STANDARD_KEYMAP[scancode] & 0xFF;
-  uint32 control_key = STANDARD_KEYMAP[scancode] & 0xFF00;
+  if (isShift() ^ isCaps())
+    return SHIFT_KEYS[scancode];
 
-  uint32 key = control_key | simple_key;
-  return key;
+  return STANDARD_KEYMAP[scancode];
 }

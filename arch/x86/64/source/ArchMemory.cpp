@@ -302,3 +302,8 @@ PageMapLevel4Entry* ArchMemory::getRootOfKernelPagingStructure()
 {
   return kernel_page_map_level_4;
 }
+
+void ArchMemory::flushTlb()
+{
+  asm volatile ("movq %%cr3, %%rax; movq %%rax, %%cr3;" ::: "%rax", "memory");
+}

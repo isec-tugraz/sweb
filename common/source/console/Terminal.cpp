@@ -234,37 +234,3 @@ void Terminal::unSetAsActiveTerminal()
   ScopeLock lock(mutex_);
   active_ = 0;
 }
-
-bool Terminal::isLetter(uint32 key)
-{
-  return ((key >= 'a') && (key <= 'z'));
-}
-
-bool Terminal::isNumber(uint32 key)
-{
-  return ((key >= '0') && (key <= '9'));
-}
-
-uint32 Terminal::remap(uint32 key)
-{
-  uint32 number_table[] =
-  {
-  ')', '!', '@', '#', '$', '%', '^', '&', '*', '('
-  };
-
-  KeyboardManager * km = KeyboardManager::instance();
-
-  if (isLetter(key))
-  {
-    bool shifted = km->isShift() ^ km->isCaps();
-
-    if (shifted)
-      key &= ~0x20;
-  }
-  if (isNumber(key))
-  {
-    if (km->isShift())
-      key = number_table[key - '0'];
-  }
-  return key;
-}

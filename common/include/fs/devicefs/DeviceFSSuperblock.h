@@ -8,13 +8,13 @@ class Superblock;
 class CharacterDevice;
 class DeviceFSType;
 
-class DeviceFSSuperBlock : public RamFSSuperblock
+class DeviceFSSuperblock : public RamFSSuperblock
 {
   public:
     static const char ROOT_NAME[];
     static const char DEVICE_ROOT_NAME[];
 
-    virtual ~DeviceFSSuperBlock();
+    virtual ~DeviceFSSuperblock();
 
     /**
      * addsa new device to the superblock
@@ -26,7 +26,7 @@ class DeviceFSSuperBlock : public RamFSSuperblock
     /**
      * Access method to the singleton instance
      */
-    static DeviceFSSuperBlock* getInstance();
+    static DeviceFSSuperblock* getInstance();
 
   private:
 
@@ -35,10 +35,10 @@ class DeviceFSSuperBlock : public RamFSSuperblock
      * @param s_root the root Dentry of the new Filesystem
      * @param s_dev the device number of the new Filesystem
      */
-    DeviceFSSuperBlock(DeviceFSType* fs_type, uint32 s_dev);
+    DeviceFSSuperblock(DeviceFSType* fs_type, uint32 s_dev);
 
   protected:
-    static DeviceFSSuperBlock* instance_;
+    static DeviceFSSuperblock* instance_;
 
 };
 

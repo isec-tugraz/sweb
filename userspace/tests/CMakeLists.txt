@@ -40,7 +40,7 @@ file(GLOB curProject_SOURCES ${curProject}/*.c)
     add_executable(${exename}.sweb ${curProject_SOURCES})
     target_link_libraries(${exename}.sweb ${FINAL_USERSPACE_TESTS_LINKER_OPTIONS} "-Wl,-whole-archive" userspace_libc ${ARCH_APPEND_LD_ARGUMENTS})
 
-    ADD_DEBUG_INFO(${curName}.sweb)
+    ADD_DEBUG_INFO(${exename}.sweb)
 
     set(ENV{USERSPACE_NAMES} "$ENV{USERSPACE_NAMES};${exename}.sweb")
     set(ENV{USERSPACE_NAMES_EXE2MINIX} "$ENV{USERSPACE_NAMES_EXE2MINIX};${EXECUTABLE_OUTPUT_PATH}/${exename}.sweb;${exename}.sweb")

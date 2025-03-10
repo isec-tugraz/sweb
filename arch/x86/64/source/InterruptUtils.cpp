@@ -203,7 +203,7 @@ extern "C" void pageFaultHandler(uint64 address, uint64 error)
   if (currentThread->switch_to_userspace_)
     arch_contextSwitch();
   else
-    asm volatile ("movq %%cr3, %%rax; movq %%rax, %%cr3;" ::: "%rax");
+    ArchMemory::flushTlb();
 }
 
 extern "C" void arch_irqHandler_1();

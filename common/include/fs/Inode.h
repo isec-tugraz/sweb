@@ -246,7 +246,7 @@ class Inode
       return superblock_;
     }
 
-    void setSuperBlock(Superblock * sb)
+    void setSuperblock(Superblock * sb)
     {
       superblock_ = sb;
     }

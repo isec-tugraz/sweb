@@ -94,6 +94,11 @@ class ArchMemory
 
     static PageMapLevel4Entry* getRootOfKernelPagingStructure();
 
+    /**
+     * flush TLB
+     */
+    static void flushTlb();
+
     /// Prevents accidental copying/assignment, can be implemented if needed
     ArchMemory(ArchMemory const &src) = delete;
     ArchMemory &operator=(ArchMemory const &src) = delete;
