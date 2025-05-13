@@ -113,26 +113,14 @@ size_t ArchCommon::getNumModules(size_t is_paging_set_up)
   }
 }
 
-size_t ArchCommon::getModuleStartAddress(size_t num,size_t is_paging_set_up)
+size_t ArchCommon::getModuleStartAddress(size_t num)
 {
-  if (is_paging_set_up)
-    return mbr.module_maps[num].start_address | PHYSICAL_TO_IDENT_OFFSET;
-  else
-  {
-    struct multiboot_remainder &orig_mbr = (struct multiboot_remainder &)(*((struct multiboot_remainder*)VIRTUAL_TO_PHYSICAL_BOOT((pointer)&mbr)));
-    return orig_mbr.module_maps[num].start_address;
-  }
+  return mbr.module_maps[num].start_address | PHYSICAL_TO_IDENT_OFFSET;
 }
 
-size_t ArchCommon::getModuleEndAddress(size_t num,size_t is_paging_set_up)
+size_t ArchCommon::getModuleEndAddress(size_t num)
 {
-  if (is_paging_set_up)
-    return mbr.module_maps[num].end_address | PHYSICAL_TO_IDENT_OFFSET;
-  else
-  {
-    struct multiboot_remainder &orig_mbr = (struct multiboot_remainder &)(*((struct multiboot_remainder*)VIRTUAL_TO_PHYSICAL_BOOT((pointer)&mbr)));
-    return orig_mbr.module_maps[num].end_address;
-  }
+  return mbr.module_maps[num].end_address | PHYSICAL_TO_IDENT_OFFSET;
 }
 
 size_t ArchCommon::getVESAConsoleHeight()
