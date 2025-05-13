@@ -183,55 +183,13 @@ bool Loader::loadDebugInfoIfAvailable()
   // now that we have names we read through all the sections
   // and load the two we're interested in
 
-  char *stab_data=0;
-  char *stabstr_data=0;
   char* sweb_data=0;
-  size_t stab_data_size=0;
   size_t sweb_data_size=0;
 
   for (Elf::Shdr const &section: section_headers)
   {
     if (section.sh_name)
     {
-      if (!strcmp(&section_names[section.sh_name], ".stab"))
-      {
-        debug(USERTRACE, "Found stab section, index is %d\n", section.sh_name);
-        if (stab_data)
-        {
-          debug(USERTRACE, "Already loaded the stab section?, skipping\n");
-        }
-        else
-        {
-          size_t size = section.sh_size;
-          stab_data = new char[size];
-          stab_data_size = size;
-          if (readFromBinary(stab_data, section.sh_offset, size))
-          {
-            debug(USERTRACE, "Failed to load stab section!\n");
-            delete[] stab_data;
-            stab_data=0;
-          }
-        }
-      }
-      if (!strcmp(&section_names[section.sh_name], ".stabstr"))
-      {
-        debug(USERTRACE, "Found stabstr section, index is %d\n", section.sh_name);
-        if (stabstr_data)
-        {
-          debug(USERTRACE, "Already loaded the stabstr section?, skipping\n");
-        }
-        else
-        {
-          size_t size = section.sh_size;
-          stabstr_data = new char[size];
-          if (readFromBinary(stabstr_data, section.sh_offset, size))
-          {
-            debug(USERTRACE, "Failed to load stabstr section!\n");
-            delete[] stabstr_data;
-            stabstr_data=0;
-          }
-        }
-      }
       if (!strcmp(&section_names[section.sh_name], ".swebdbg")) {
         debug(USERTRACE, "Found SWEBDbg Infos\n");
         size_t size = section.sh_size;
@@ -245,27 +203,19 @@ bool Loader::loadDebugInfoIfAvailable()
           }
         } else {
           debug(USERTRACE, "SWEBDbg Infos are empty\n");
-          delete[] stab_data;
-          delete[] stabstr_data;
           return false;
         }
       }
     }
   }
 
-  if ((!stab_data || !stabstr_data) && !sweb_data)
+  if (!sweb_data)
   {
-    delete[] stab_data;
-    delete[] stabstr_data;
     debug(USERTRACE, "Failed to load necessary debug data!\n");
     return false;
   }
 
-    if(stab_data) {
-      userspace_debug_info_ = new Stabs2DebugInfo(stab_data, stab_data + stab_data_size, stabstr_data);
-    } else {
-      userspace_debug_info_ = new SWEBDebugInfo(sweb_data, sweb_data + sweb_data_size);
-    }
+  userspace_debug_info_ = new SWEBDebugInfo(sweb_data, sweb_data + sweb_data_size);
   return true;
 }
 
