@@ -115,7 +115,7 @@ uint32 ArchCommon::getNumModules(uint32 is_paging_set_up)
 uint32 ArchCommon::getModuleStartAddress(uint32 num, uint32 is_paging_set_up)
 {
   if (is_paging_set_up)
-    return mbr.module_maps[num].start_address + 3*1024*1024*1024U;
+    return mbr.module_maps[num].start_address | PHYSICAL_TO_IDENT_OFFSET;
   else
   {
     struct multiboot_remainder &orig_mbr = (struct multiboot_remainder &)(*((struct multiboot_remainder*)VIRTUAL_TO_PHYSICAL_BOOT((pointer)&mbr)));
@@ -127,7 +127,7 @@ uint32 ArchCommon::getModuleStartAddress(uint32 num, uint32 is_paging_set_up)
 uint32 ArchCommon::getModuleEndAddress(uint32 num, uint32 is_paging_set_up)
 {
   if (is_paging_set_up)
-    return mbr.module_maps[num].end_address + 3*1024*1024*1024U;
+    return mbr.module_maps[num].end_address | PHYSICAL_TO_IDENT_OFFSET;
   else
   {
     struct multiboot_remainder &orig_mbr = (struct multiboot_remainder &)(*((struct multiboot_remainder*)VIRTUAL_TO_PHYSICAL_BOOT((pointer)&mbr)));

@@ -20,6 +20,8 @@
  */
 #define PHYSICAL_TO_VIRTUAL_OFFSET (LINK_BASE - LOAD_BASE)
 
+#define PHYSICAL_TO_IDENT_OFFSET   0xC0000000U
+
 /**
  * returns the virtual address of a physical address by using the offset
  */

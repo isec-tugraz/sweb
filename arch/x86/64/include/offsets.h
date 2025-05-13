@@ -12,6 +12,8 @@
  */
 #define PHYSICAL_TO_VIRTUAL_OFFSET 0xFFFFFFFF80000000ULL
 
+#define PHYSICAL_TO_IDENT_OFFSET   0xFFFFF00000000000ULL
+
 /**
  * returns the physical address of a virtual address by using the offset
  */
