@@ -100,11 +100,7 @@ PageManager::PageManager() : lock_("PageManager::lock_")
     size_t end_page = (ArchCommon::getModuleEndAddress(i) & ~PHYSICAL_TO_IDENT_OFFSET) / PAGE_SIZE;
     debug(PM, "Ctor: module: start_page: %zx, end_page: %zx\n", start_page, end_page);
     for (size_t k = Min(start_page, number_of_pages_); k <= Min(end_page, number_of_pages_ - 1); ++k)
-    {
       Bitmap::setBit(page_usage_table, used_pages, k);
-      if (ArchMemory::get_PPN_Of_VPN_In_KernelMapping(PHYSICAL_TO_IDENT_OFFSET / PAGE_SIZE + k, 0, 0) == 0)
-        ArchMemory::mapKernelPage(PHYSICAL_TO_IDENT_OFFSET / PAGE_SIZE + k,k);
-    }
   }
 
   size_t num_pages_for_bitmap = (number_of_pages_ / 8) / PAGE_SIZE + 1;
