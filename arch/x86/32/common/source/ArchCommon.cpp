@@ -114,12 +114,12 @@ uint32 ArchCommon::getNumModules(uint32 is_paging_set_up)
 
 uint32 ArchCommon::getModuleStartAddress(uint32 num)
 {
-  return mbr.module_maps[num].start_address | PHYSICAL_TO_IDENT_OFFSET;
+  return mbr.module_maps[num].start_address | IDENT_MAPPING_START;
 }
 
 uint32 ArchCommon::getModuleEndAddress(uint32 num)
 {
-  return mbr.module_maps[num].end_address | PHYSICAL_TO_IDENT_OFFSET;
+  return mbr.module_maps[num].end_address | IDENT_MAPPING_START;
 }
 
 uint32 ArchCommon::getVESAConsoleHeight()

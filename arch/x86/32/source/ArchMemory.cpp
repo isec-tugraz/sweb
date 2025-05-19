@@ -207,5 +207,5 @@ uint32 ArchMemory::getValueForCR3()
 
 pointer ArchMemory::getIdentAddressOfPPN(uint32 ppn, uint32 page_size /* optional */)
 {
-  return PHYSICAL_TO_IDENT_OFFSET | (ppn * page_size);
+  return IDENT_MAPPING_START | (ppn * page_size);
 }

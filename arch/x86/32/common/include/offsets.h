@@ -20,8 +20,6 @@
  */
 #define PHYSICAL_TO_VIRTUAL_OFFSET (LINK_BASE - LOAD_BASE)
 
-#define PHYSICAL_TO_IDENT_OFFSET   0xC0000000U
-
 /**
  * returns the virtual address of a physical address by using the offset
  */
@@ -31,6 +29,11 @@
  * returns the physical address of a virtual address by using the offset
  */
 #define VIRTUAL_TO_PHYSICAL_BOOT(x) ((x) - PHYSICAL_TO_VIRTUAL_OFFSET)
+
+/**
+ * The start of the ident mapping
+ */
+#define IDENT_MAPPING_START 0xC0000000U
 
 /**
  * Only addresses below 2gig virtual belong to the user space

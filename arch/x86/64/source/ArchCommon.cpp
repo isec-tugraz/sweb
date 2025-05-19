@@ -115,12 +115,12 @@ size_t ArchCommon::getNumModules(size_t is_paging_set_up)
 
 size_t ArchCommon::getModuleStartAddress(size_t num)
 {
-  return mbr.module_maps[num].start_address | PHYSICAL_TO_IDENT_OFFSET;
+  return mbr.module_maps[num].start_address | IDENT_MAPPING_START;
 }
 
 size_t ArchCommon::getModuleEndAddress(size_t num)
 {
-  return mbr.module_maps[num].end_address | PHYSICAL_TO_IDENT_OFFSET;
+  return mbr.module_maps[num].end_address | IDENT_MAPPING_START;
 }
 
 size_t ArchCommon::getVESAConsoleHeight()
