@@ -22,7 +22,7 @@ pointer ArchCommon::getFreeKernelMemoryStart()
 
 pointer ArchCommon::getFreeKernelMemoryEnd()
 {
-   return (pointer)getModuleEndAddress(0);
+   return (pointer)&kernel_end_address;
 }
 
 
@@ -33,17 +33,17 @@ size_t ArchCommon::haveVESAConsole(size_t is_paging_set_up __attribute__((unused
 
 size_t ArchCommon::getNumModules(size_t is_paging_set_up __attribute__((unused)))
 {
-  return 1;
+  return 0;
 }
 
-size_t ArchCommon::getModuleStartAddress(size_t num __attribute__((unused)), size_t is_paging_set_up __attribute__((unused)))
+size_t ArchCommon::getModuleStartAddress(size_t num __attribute__((unused)))
 {
-  return LINK_BASE;
+  assert(false);
 }
 
-size_t ArchCommon::getModuleEndAddress(size_t num __attribute__((unused)), size_t is_paging_set_up __attribute__((unused)))
+size_t ArchCommon::getModuleEndAddress(size_t num __attribute__((unused)))
 {
-  return getKernelEndAddress();
+  assert(false);
 }
 
 size_t ArchCommon::getVESAConsoleHeight()
