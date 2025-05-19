@@ -8,8 +8,6 @@
 #include "backtrace.h"
 #include "SWEBDebugInfo.h"
 
-#define PHYSICAL_MEMORY_AVAILABLE 8*1024*1024
-
 extern void* kernel_end_address;
 
 pointer ArchCommon::getKernelEndAddress()

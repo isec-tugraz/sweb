@@ -3,6 +3,7 @@
 #include "types.h"
 #include "paging-definitions.h"
 #include "uvector.h"
+#include "offsets.h"
 
 /**
  *
@@ -56,7 +57,7 @@ public:
  */
   static pointer getIdentAddressOfPPN(uint32 ppn, uint32 page_size=PAGE_SIZE)
   {
-    return 0xC0000000U + (ppn * page_size);
+    return IDENT_MAPPING_START | (ppn * page_size);
   }
 
 /**
