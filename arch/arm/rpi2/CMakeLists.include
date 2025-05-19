@@ -10,12 +10,18 @@ set(ARCH_LD_ARGUMENTS -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -nostdinc 
 set(KERNEL_LD_ARGUMENT ${ARCH_LD_ARGUMENTS} ${NOPIEFLAG})
 set(ARCH_APPEND_LD_ARGUMENTS -Wl,-lgcc)
 
+set(ADD_LD_ARGUMENT -Wl,"${PROJECT_BINARY_DIR}/lib/debug_info.o")
+
+set(KERNEL_IMAGE_OBJCOPY
+COMMAND ${PROJECT_BINARY_DIR}/add-dbg ${PROJECT_BINARY_DIR}/kernel.x ${PROJECT_BINARY_DIR}/kernel.dbg
+COMMAND touch ${PROJECT_BINARY_DIR}/debug_info.c
+COMMAND ${CMAKE_C_COMPILER} -c ${PROJECT_BINARY_DIR}/debug_info.c -o ${PROJECT_BINARY_DIR}/lib/debug_info.o
+COMMAND "${OBJCOPY_EXECUTABLE}" --add-section .swebdbg="${PROJECT_BINARY_DIR}/kernel.dbg" --set-section-flags .swebdbg=load,data ${PROJECT_BINARY_DIR}/lib/debug_info.o
+COMMAND rm ${PROJECT_BINARY_DIR}/debug_info.c
+)
 
 MACRO(ARCH2OBJ ARCHOBJ_LIBNAME LIBRARY_NAME)
 ENDMACRO(ARCH2OBJ)
-
-set(KERNEL_IMAGE_OBJCOPY )
-
 
 # sdcard: Create an sdcard for the raspberry pi
 add_custom_target(sdcard
