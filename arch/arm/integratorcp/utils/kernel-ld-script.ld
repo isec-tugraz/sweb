@@ -23,6 +23,9 @@ SECTIONS
     ro_data_start_address = .;
     *(.rodata*)
     ro_data_end_address = .;
+    swebdbg_start_address_nr  = .;
+    *(.swebdbg)
+    swebdbg_end_address_nr  = .;
   }
   
   .data ALIGN(4096) : AT(LS_Phys + (LS_Data - LS_Code))
