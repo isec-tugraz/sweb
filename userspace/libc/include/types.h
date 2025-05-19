@@ -5,11 +5,11 @@ extern "C" {
 #endif
 
 #if defined(CMAKE_X86_64) || defined(CMAKE_ARMV8_RPI3)
-typedef long unsigned int size_t;
-typedef long          int ssize_t;
+typedef unsigned long size_t;
+typedef signed long ssize_t;
 #else
 typedef unsigned int size_t;
-typedef          int ssize_t;
+typedef signed int ssize_t;
 #endif
 
 typedef size_t  off_t;
