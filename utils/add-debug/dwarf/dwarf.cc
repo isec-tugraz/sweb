@@ -1,4 +1,5 @@
 #include "internal.hh"
+#include <iostream>
 
 using namespace std;
 
@@ -46,14 +47,23 @@ dwarf::dwarf(const std::shared_ptr<loader> &l)
         // Get compilation units.  Everything derives from these, so
         // there's no point in doing it lazily.
         cursor infocur(m->sec_info);
+        size_t all = 0, nok = 0;
         while (!infocur.end()) {
                 // XXX Circular reference.  Given that we now require
                 // the dwarf object to stick around for DIEs, maybe we
                 // might as well require that for units, too.
-                m->compilation_units.emplace_back(
-                        *this, infocur.get_section_offset());
+                ++all;
+                try {
+                        m->compilation_units.emplace_back(
+                                *this, infocur.get_section_offset());
+                } catch (format_error &) {
+                        // skip compilation units we can't handle
+                        ++nok;
+                }
                 infocur.subsection();
         }
+
+        if (nok) cout << "[add-dbg] Skipped " << nok << " out of " << all << " compilation units." << endl;
 }
 
 dwarf::~dwarf()
