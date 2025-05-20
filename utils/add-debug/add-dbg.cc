@@ -235,8 +235,8 @@ int main(int argc, char **argv) {
         //printf("Got %d bytes of debug info\n", (int) (debug - debug_start));
         fwrite(debug_start, debug - debug_start, 1, d);
 
-    } catch (...) {
-      printf("No debug infos for '%s' available (binary too small).\n",argv[1]);
+    } catch (exception const &e) {
+      printf("No debug infos for '%s' available (%s).\n", argv[1], e.what());
     }
 
     fclose(d);

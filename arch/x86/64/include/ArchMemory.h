@@ -64,7 +64,7 @@ class ArchMemory
      */
     static pointer getIdentAddressOfPPN(uint64 ppn, uint32 page_size=PAGE_SIZE)
     {
-      return 0xFFFFF00000000000ULL | (ppn * page_size);
+      return IDENT_MAPPING_START | (ppn * page_size);
     }
 
     /**
