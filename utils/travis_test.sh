@@ -24,7 +24,7 @@ fi
 if [[ "$1" == "arm_rpi2" ]]; 
 then
     exit 0 # not supported in the travis qemu
-    qemu-system-arm -kernel kernel.x -cpu arm1176 -m 512 -M raspi2 -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial file:/tmp/out.log -d guest_errors,unimp -monitor pipe:/tmp/qemu -nographic -display none > /dev/null 2> /dev/null &
+    qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial file:/tmp/out.log -d guest_errors,unimp -monitor pipe:/tmp/qemu -nographic -display none > /dev/null 2> /dev/null &
     sleep 2
 fi
 if [[ "$1" == "arm_icp" ]]; 
@@ -33,8 +33,8 @@ then
 fi
 if [[ "$1" == "armv8_rpi3" ]];
 then
-    if [[ $(qemu-system-aarch64 -machine help | grep raspi3 | wc -l) != "0" ]]; then
-        qemu-system-aarch64 -M raspi3 -cpu cortex-a53 -m 1024 -drive file=SWEB-flat.vmdk,if=sd,format=raw -no-reboot -kernel kernel.x -serial file:/tmp/out.log -d guest_errors,unimp -monitor pipe:/tmp/qemu -nographic -display none  > /dev/null 2> /dev/null  &
+    if [[ $(qemu-system-aarch64 -machine help | grep raspi3b | wc -l) != "0" ]]; then
+        qemu-system-aarch64 -M raspi3b -cpu cortex-a53 -m 1024 -drive file=SWEB-flat.vmdk,if=sd,format=raw -no-reboot -kernel kernel.x -serial file:/tmp/out.log -d guest_errors,unimp -monitor pipe:/tmp/qemu -nographic -display none  > /dev/null 2> /dev/null  &
         sleep 10
     else
         echo "QEMU version is too old to support the raspberry pi 3"

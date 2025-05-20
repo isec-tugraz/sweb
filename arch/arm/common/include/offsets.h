@@ -32,6 +32,11 @@
 #define VIRTUAL_TO_PHYSICAL_BOOT(x) ((x) - PHYSICAL_TO_VIRTUAL_OFFSET)
 
 /**
+ * The start of the ident mapping
+ */
+#define IDENT_MAPPING_START 0xC0000000U
+
+/**
  * Only addresses below 2gig virtual belong to the user space
  */
 #define USER_BREAK 0x80000000

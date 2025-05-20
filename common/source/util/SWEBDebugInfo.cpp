@@ -24,7 +24,7 @@ struct LineHeader {
 
 
 SWEBDebugInfo::SWEBDebugInfo(char const *sweb_start, char const *sweb_end) : Stabs2DebugInfo(sweb_start, sweb_end, 0) {
-  if (sweb_start != 0 && sweb_end != 0)
+  if (sweb_start && sweb_end && sweb_start != sweb_end)
     initialiseSymbolTable();
 }
 

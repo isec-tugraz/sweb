@@ -81,7 +81,7 @@ void ArchBoardSpecific::frameBufferInit()
   assert(fbs.width == fbs.vwidth);
   assert(fbs.height == fbs.vheight);
   assert(fbs.size == (fbs.width * fbs.height * fbs.depth / 8));
-  framebuffer = (fbs.pointer & ~0xC0000000) + 0xC0000000;
+  framebuffer = fbs.pointer | IDENT_MAPPING_START;
 }
 
 void ArchBoardSpecific::onIdle()
