@@ -1,6 +1,6 @@
 set(KERNEL_BINARY kernel.x)
 
-set(ARCH_RPI_KERNEL_CFLAGS -O0 -gdwarf-2 -Wall -Wextra -Werror -Wno-error=format -nostdinc -nostdlib -nostartfiles -nodefaultlibs -fno-builtin -fno-exceptions -fno-stack-protector -ffreestanding -mapcs -marm -Wno-strict-aliasing -march=armv6 -fshort-wchar ${NOPICFLAG})
+set(ARCH_RPI_KERNEL_CFLAGS -O0 -gdwarf-2 -Wall -Wextra -Werror -Wno-error=format -nostdinc -nostdlib -nostartfiles -nodefaultlibs -fno-builtin -fno-exceptions -fno-stack-protector -ffreestanding -mapcs -marm -Wno-strict-aliasing -mcpu=cortex-a7 -fshort-wchar ${NOPICFLAG})
 
 set(KERNEL_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -std=gnu++17 -Wno-nonnull-compare -nostdinc++ -fno-rtti ${ARCH_RPI_KERNEL_CFLAGS})
 set(KERNEL_CMAKE_C_FLAGS   ${CMAKE_C_FLAGS}   -std=gnu11 ${ARCH_RPI_KERNEL_CFLAGS})
@@ -39,16 +39,16 @@ add_custom_target(sdcardq
 
 # qemu: Run qemu in non debugging mode
 add_custom_target(qemu
-    COMMAND qemu-system-arm -kernel kernel.x -cpu arm1176 -m 1024 -M raspi2 -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp
-    COMMENT "Executing `qemu-system-arm -kernel kernel.x -cpu arm1176 -m 1024 -M raspi2 -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp`"
+    COMMAND qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp
+    COMMENT "Executing `qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp`"
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMAND reset -I
     )
 
 # qemugdb: Run qemu in non debugging mode
 add_custom_target(qemugdb
-    COMMAND qemu-system-arm -kernel kernel.x -cpu arm1176 -m 512 -M raspi2 -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S
-    COMMENT "Executing `qemu-system-arm -kernel kernel.x -cpu arm1176 -m 512 -M raspi2 -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S`"
+    COMMAND qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S
+    COMMENT "Executing `qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S`"
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMAND reset -I
     )
