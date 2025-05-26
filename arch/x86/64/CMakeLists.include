@@ -44,7 +44,7 @@ set(KERNEL_IMAGE_OBJCOPY
   COMMAND mv ${PROJECT_BINARY_DIR}/kernel.x ${PROJECT_BINARY_DIR}/kernel64.x && ${OBJCOPY_EXECUTABLE} -O elf32-i386 ${PROJECT_BINARY_DIR}/kernel64.x ${PROJECT_BINARY_DIR}/kernel.x
   )
 
-set(AVAILABLE_MEMORY 8M)
+set(AVAILABLE_MEMORY 128M)
 
 set(QEMU_BIN qemu-system-x86_64)
 set(QEMU_FLAGS_COMMON -m ${AVAILABLE_MEMORY} -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot)
