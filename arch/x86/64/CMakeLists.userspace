@@ -1,2 +1,3 @@
-set(ARCH_USERSPACE_COMPILE_OPTIONS -Wall -Werror -std=gnu11 -gdwarf-4 -O0 -m64 -static -nostdinc -fno-builtin -nostdlib -nodefaultlibs -fno-stack-protector -fno-common -Werror=implicit-function-declaration -Wno-error=unused-variable -fno-stack-clash-protection)
+set(ARCH_USERSPACE_COMPILE_OPTIONS_C -Wall -Werror -std=gnu11 -g -gdwarf-4 -O0 -m64 -static -nostdinc -fno-builtin -nostdlib -nodefaultlibs -fno-stack-protector -fno-common -Werror=implicit-function-declaration -Wno-error=unused-variable -fno-stack-clash-protection)
+set(ARCH_USERSPACE_COMPILE_OPTIONS_CXX -Wall -Werror -std=gnu++11 -g -gdwarf-4 -O0 -m64 -static -nostdinc -fno-builtin -nostdlib -nodefaultlibs -fno-stack-protector -fno-common -Wno-error=unused-variable -fno-stack-clash-protection -fcheck-new)
 set(ARCH_USERSPACE_LINKER_OPTIONS -static)
