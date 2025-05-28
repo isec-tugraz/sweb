@@ -65,6 +65,10 @@ int backtrace_user(pointer *call_stack, int size, Thread *thread, bool /*use_sto
   if (!call_stack || !size || !thread->user_registers_)
     return 0;
 
+  if (thread->user_registers_->rbp % sizeof(pointer))
+  {
+    debug(BACKTRACE, "stack not aligned. this could cause serious problems\n");
+  }
   void *rbp = (void*)thread->user_registers_->rbp;
   StackFrame *CurrentFrame = (StackFrame*)rbp;
   StackFrame *CurrentFrameI = (StackFrame*)thread->loader_->arch_memory_.checkAddressValid((pointer)rbp);
@@ -82,13 +86,29 @@ int backtrace_user(pointer *call_stack, int size, Thread *thread, bool /*use_sto
 
   while (i < size &&
       ADDRESS_BETWEEN(CurrentFrame, StackEnd, StackStart) &&
+      ADDRESS_BETWEEN(&CurrentFrame->return_address, StackEnd, StackStart) &&
       ADDRESS_BETWEEN(StackEnd, StartAddress, EndAddress) &&
       ADDRESS_BETWEEN(StackStart, StartAddress, EndAddress) &&
-      CurrentFrameI &&
-      ADDRESS_BETWEEN(CurrentFrameI->return_address, StartAddress, EndAddress))
+      CurrentFrameI)
   {
-    call_stack[i++] = (pointer)CurrentFrameI->return_address;
+    pointer return_address;
+    if ((((pointer)CurrentFrameI)-sizeof(pointer))%PAGE_SIZE == 0)
+    {
+      auto return_ptr = (pointer *)thread->loader_->arch_memory_.checkAddressValid((pointer)&CurrentFrameI->return_address);
+      return_address = return_ptr ? *return_ptr : 0;
+    }
+    else
+    {
+      return_address = (pointer)CurrentFrameI->return_address;
+    }
+
+    if (!ADDRESS_BETWEEN(CurrentFrameI->return_address, StartAddress, EndAddress))
+      break;
+
+    call_stack[i++] = return_address;
+
     CurrentFrame = CurrentFrameI->previous_frame;
+
     CurrentFrameI = (StackFrame*)thread->loader_->arch_memory_.checkAddressValid((pointer)CurrentFrameI->previous_frame);
   }
 
