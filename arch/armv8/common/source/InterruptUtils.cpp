@@ -35,7 +35,9 @@ void pageFaultHandler(size_t address, uint32 type NU, size_t exc_syndrome NU)
 {
   bool writing = exc_syndrome & (1 << 6);
   bool fetch = type;
-  bool present = (exc_syndrome & 0b111111) == 0b0011;  //this is a permission fault
+
+  // This sets present to zero if the fault is a translation fault on any level (same behaviour as on x86)
+  bool present = !(((exc_syndrome & 0b111111) >= 0b100) && ((exc_syndrome & 0b111111) <= 0b111));
 
   PageFaultHandler::enterPageFault(address, currentThread->switch_to_userspace_, present , writing, fetch);
 }
