@@ -80,5 +80,5 @@ typedef struct
   size_t page_ppn                  :20;
 } __attribute__((__packed__)) PageTableEntry;
 
-static_assert(sizeof(PageDirPageEntry) == 4, "PageTableEntry is not 32 bit");
+static_assert(sizeof(PageTableEntry) == 4, "PageTableEntry is not 32 bit");
 
