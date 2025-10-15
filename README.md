@@ -3,4 +3,4 @@
 
 SWEB Educational OS
 
-Please have a look at https://www.iaik.tugraz.at/os
+Please have a look at https://www.isec.tugraz.at/os
