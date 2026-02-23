@@ -59,7 +59,7 @@ class ArchCommon
      * @param num the number of grub-loaded module which this is about
      * @return size_t returns memory start address of module "num"
      */
-    static size_t getModuleStartAddress(size_t num, size_t is_paging_set_up = 1);
+    static size_t getModuleStartAddress(size_t num);
 
     /**
      * Parses the Grub MultiBoot Info with regard to modules
@@ -67,7 +67,7 @@ class ArchCommon
      * @param num the number of grub-loaded module which this is about
      * @return size_t returns memory end address of module "num"
      */
-    static size_t getModuleEndAddress(size_t num, size_t is_paging_set_up = 1);
+    static size_t getModuleEndAddress(size_t num);
 
     /**
      * Generates the according console depending on the architecture

@@ -39,6 +39,7 @@ uint32 count;
 #define FLAG_STATUS_MASK (0xf)
 #define FLAG_TRANSLATION_PAGE (7)
 #define FLAG_TRANSLATION_SECTION (5)
+#define FLAG_EXTERNAL_ABORT (8)
 
 //TODO extern "C" void arch_pageFaultHandler();
 void pageFaultHandler(uint32 address, uint32 type)
@@ -76,7 +77,7 @@ void pageFaultHandler(uint32 address, uint32 type)
     writing = false;
     status = instruction_fault & FLAG_STATUS_MASK;
   }
-  present = !((status == FLAG_TRANSLATION_PAGE) || (status == FLAG_TRANSLATION_SECTION));
+  present = !((status == FLAG_TRANSLATION_PAGE) || (status == FLAG_TRANSLATION_SECTION) || (status == FLAG_EXTERNAL_ABORT));
 
   PageFaultHandler::enterPageFault(address, currentThread->switch_to_userspace_,  present, writing, fetch);
 }

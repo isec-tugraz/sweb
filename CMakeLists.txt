@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10.0)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
@@ -201,7 +201,7 @@ add_custom_target (kernel_to_image
 
 #Custom Command: Outputs kernel_image
 #Executes the linker command after all libraries where build successfully
-if("${ARCH}" MATCHES "armv8")
+if("${ARCH}" MATCHES "arm")
 #For armv8 we need to execute the final linking step twice because after the first time
 #The debug info gets extracted and linked in at the second link step
 add_custom_target (kernel_image

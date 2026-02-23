@@ -64,7 +64,7 @@ template<typename T>
 void ArchMemory::insert(pointer map_ptr, uint64 index, uint64 ppn, uint64 bzero, uint64 size, uint64 user_access,
                         uint64 writeable)
 {
-  assert(map_ptr & ~0xFFFFF00000000000ULL);
+  assert(map_ptr & ~IDENT_MAPPING_START);
   T* map = (T*) map_ptr;
   debug(A_MEMORY, "%s: page %p index %zx ppn %zx user_access %zx size %zx\n", __PRETTY_FUNCTION__, map, index, ppn,
         user_access, size);
@@ -160,6 +160,12 @@ ArchMemory::~ArchMemory()
 
 pointer ArchMemory::checkAddressValid(uint64 vaddress_to_check)
 {
+  if (vaddress_to_check >= USER_BREAK && vaddress_to_check < KERNEL_START)
+  {
+    debug(A_MEMORY, "checkAddressValid %zx non-canonical -> false\n", vaddress_to_check);
+    return 0;
+  }
+
   ArchMemoryMapping m = resolveMapping(page_map_level_4_, vaddress_to_check / PAGE_SIZE);
   if (m.page != 0)
   {

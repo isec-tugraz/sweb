@@ -8,8 +8,6 @@
 #define PAGE_SIZE 4096
 #define PAGE_INDEX_OFFSET_BITS 12
 
-#define PHYSICAL_OFFSET     0xC0000000
-
 
 // Constants for page fault handling
 #define ERROR_MASK            0x00000007
@@ -82,5 +80,5 @@ typedef struct
   size_t page_ppn                  :20;
 } __attribute__((__packed__)) PageTableEntry;
 
-static_assert(sizeof(PageDirPageEntry) == 4, "PageTableEntry is not 32 bit");
+static_assert(sizeof(PageTableEntry) == 4, "PageTableEntry is not 32 bit");
 

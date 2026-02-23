@@ -1,6 +1,6 @@
 set(KERNEL_BINARY kernel.x)
 
-set(ARCH_X86_32_KERNEL_CFLAGS -m32 -O0 -gstabs2 -Wall -Wextra -Werror -Wno-error=format -Wno-nonnull-compare -nostdinc -nostdlib -nostartfiles -nodefaultlibs -fno-builtin -fno-exceptions -fno-stack-protector -ffreestanding -mno-red-zone -mno-mmx -mno-sse2 -mno-sse3 -mno-3dnow ${NOPICFLAG})
+set(ARCH_X86_32_KERNEL_CFLAGS -m32 -O0 -gdwarf-2 -Wall -Wextra -Werror -Wno-error=format -Wno-nonnull-compare -nostdinc -nostdlib -nostartfiles -nodefaultlibs -fno-builtin -fno-exceptions -fno-stack-protector -ffreestanding -mno-red-zone -mno-mmx -mno-sse2 -mno-sse3 -mno-3dnow ${NOPICFLAG})
 
 set(KERNEL_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -std=gnu++17 -nostdinc++ -fno-rtti ${ARCH_X86_32_KERNEL_CFLAGS})
 set(KERNEL_CMAKE_C_FLAGS   ${CMAKE_C_FLAGS}   -std=gnu11 ${ARCH_X86_32_KERNEL_CFLAGS})
@@ -8,6 +8,7 @@ set(KERNEL_CMAKE_C_FLAGS   ${CMAKE_C_FLAGS}   -std=gnu11 ${ARCH_X86_32_KERNEL_CF
 set(ARCH_LD_ARGUMENTS -m32 -Wl,--build-id=none -Wl,-z,max-page-size=0x1000 -Wl,-melf_i386 -nostdinc -nostdlib -nodefaultlibs)
 set(KERNEL_LD_ARGUMENT ${ARCH_LD_ARGUMENTS} -mcmodel=kernel ${NOPIEFLAG})
 set(ARCH_APPEND_LD_ARGUMENTS )
+
 
 MACRO(ARCH2OBJ ARCHOBJ_LIBNAME LIBRARY_NAME)
 ENDMACRO(ARCH2OBJ)
@@ -17,6 +18,10 @@ set(KERNEL_IMAGE_OBJCOPY COMMAND ${OBJCOPY_EXECUTABLE} ${PROJECT_BINARY_DIR}/ker
 if ("${DEBUG}" STREQUAL "1")
   set(KERNEL_IMAGE_OBJCOPY )
 endif()
+set(KERNEL_IMAGE_OBJCOPY
+  COMMAND ${PROJECT_BINARY_DIR}/add-dbg ${PROJECT_BINARY_DIR}/kernel.x ${PROJECT_BINARY_DIR}/kernel.dbg
+  ${KERNEL_IMAGE_OBJCOPY}
+  )
 
 set(AVAILABLE_MEMORY 8M)
 

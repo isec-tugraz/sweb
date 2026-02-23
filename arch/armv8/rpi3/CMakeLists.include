@@ -51,16 +51,16 @@ add_custom_target(sdcardq
   )
 
 add_custom_target(qemu
-  COMMAND qemu-system-aarch64 -M raspi3 -cpu cortex-a53 -m 1024 -drive file=${HDD_IMAGE},if=sd -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp
-  COMMENT "Executing `qemu-system-aarch64 -M raspi3 -cpu cortex-a53 -m 1024 -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp`"
+  COMMAND qemu-system-aarch64 -M raspi3b -cpu cortex-a53 -m 1024 -drive file=${HDD_IMAGE},if=sd -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp
+  COMMENT "Executing `qemu-system-aarch64 -M raspi3b -cpu cortex-a53 -m 1024 -drive file=${HDD_IMAGE},if=sd -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp`"
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
   COMMAND reset -I
   )
 
 # qemugdb: Run qemu in non debugging mode
 add_custom_target(qemugdb
-  COMMAND qemu-system-aarch64 -M raspi3 -cpu cortex-a53 -m 1024 -drive file=${HDD_IMAGE},if=sd -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp -s -S
-  COMMENT "Executing `qemu-system-aarch64 -M raspi3 -cpu cortex-a53 -m 1024 -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp -s -S`"
+  COMMAND qemu-system-aarch64 -M raspi3b -cpu cortex-a53 -m 1024 -drive file=${HDD_IMAGE},if=sd -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp -s -S
+  COMMENT "Executing `qemu-system-aarch64 -M raspi3b -cpu cortex-a53 -m 1024 -drive file=${HDD_IMAGE},if=sd -no-reboot -kernel kernel.x -serial stdio -d guest_errors,unimp -s -S`"
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
   COMMAND reset -I
   )

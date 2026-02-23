@@ -3,6 +3,7 @@
 #include "assert.h"
 #include "PageManager.h"
 #include "kstring.h"
+#include "offsets.h"
 
 PageDirEntry kernel_page_directory[PAGE_DIRECTORY_ENTRIES] __attribute__((aligned(0x1000)));
 PageTableEntry kernel_page_tables[4 * PAGE_TABLE_ENTRIES] __attribute__((aligned(0x1000)));
@@ -206,5 +207,5 @@ uint32 ArchMemory::getValueForCR3()
 
 pointer ArchMemory::getIdentAddressOfPPN(uint32 ppn, uint32 page_size /* optional */)
 {
-  return (3U * 1024U * 1024U * 1024U) + (ppn * page_size);
+  return IDENT_MAPPING_START | (ppn * page_size);
 }

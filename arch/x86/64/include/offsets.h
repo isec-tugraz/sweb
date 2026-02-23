@@ -18,6 +18,11 @@
 #define VIRTUAL_TO_PHYSICAL_BOOT(x) ((void*)(~PHYSICAL_TO_VIRTUAL_OFFSET & ((uint64)x)))
 
 /**
+ * The start of the ident mapping
+ */
+#define IDENT_MAPPING_START 0xFFFFF00000000000ULL
+
+/**
  * Use only the lower canonical half for userspace
  */
 #define USER_BREAK 0x0000800000000000ULL

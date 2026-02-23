@@ -66,6 +66,8 @@ class Scheduler
 
     size_t ticks_;
 
+    size_t unfinished_cleanup_counter_;
+
     IdleThread idle_thread_;
     CleanupThread cleanup_thread_;
 };
