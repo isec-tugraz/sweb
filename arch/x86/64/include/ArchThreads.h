@@ -11,33 +11,34 @@
 
 struct ArchThreadRegisters
 {
-  uint64  rip;       //   0
-  uint64  cs;        //   8
-  uint64  rflags;    //  16
-  uint64  rax;       //  24
-  uint64  rcx;       //  32
-  uint64  rdx;       //  40
-  uint64  rbx;       //  48
-  uint64  rsp;       //  56
-  uint64  rbp;       //  64
-  uint64  rsi;       //  72
-  uint64  rdi;       //  80
-  uint64  r8;        //  88
-  uint64  r9;        //  96
-  uint64  r10;       // 104
-  uint64  r11;       // 112
-  uint64  r12;       // 120
-  uint64  r13;       // 128
-  uint64  r14;       // 136
-  uint64  r15;       // 144
-  uint64  ds;        // 152
-  uint64  es;        // 160
-  uint64  fs;        // 168
-  uint64  gs;        // 176
-  uint64  ss;        // 184
-  uint64  rsp0;      // 192
-  uint64  cr3;       // 200
-  uint32  fpu[28];   // 208
+  uint64  rip;           //   0
+  uint64  cs;            //   8
+  uint64  rflags;        //  16
+  uint64  rax;           //  24
+  uint64  rcx;           //  32
+  uint64  rdx;           //  40
+  uint64  rbx;           //  48
+  uint64  rsp;           //  56
+  uint64  rbp;           //  64
+  uint64  rsi;           //  72
+  uint64  rdi;           //  80
+  uint64  r8;            //  88
+  uint64  r9;            //  96
+  uint64  r10;           // 104
+  uint64  r11;           // 112
+  uint64  r12;           // 120
+  uint64  r13;           // 128
+  uint64  r14;           // 136
+  uint64  r15;           // 144
+  uint64  ds;            // 152
+  uint64  es;            // 160
+  uint64  fs;            // 168
+  uint64  gs;            // 176
+  uint64  ss;            // 184
+  uint64  rsp0;          // 192
+  uint64  cr3;           // 200
+  uint8  *fpu = nullptr; // 208
+  ~ArchThreadRegisters() {delete[] fpu;}
 };
 
 class Thread;

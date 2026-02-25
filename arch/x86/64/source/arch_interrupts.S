@@ -1,5 +1,5 @@
 # ok, this is our main interrupt handling stuff
-
+.section .note.GNU-stack,"",@progbits
 .code64
 .text
 

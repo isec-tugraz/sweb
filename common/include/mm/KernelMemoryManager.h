@@ -66,6 +66,7 @@ class MallocSegment
 
   private:
     size_t size_flag_; // = 0; //max size is 2^31-1
+    char padding_[8];
 };
 
 extern void* kernel_end_address;
@@ -169,3 +170,5 @@ class KernelMemoryManager
     uint32 segments_free_;
     size_t approx_memory_free_;
 };
+
+static_assert(0 == (sizeof(MallocSegment) & 0xf) && "malloc segment is not a multiple of 16 bytes, this will break alignment");
