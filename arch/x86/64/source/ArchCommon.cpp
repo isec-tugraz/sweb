@@ -229,8 +229,6 @@ struct GDTPtr
     uint64 addr;
 }__attribute__((__packed__)) gdt_ptr;
 
-
-
 extern "C" void entry64()
 {
   PRINT("Parsing Multiboot Header...\n");
