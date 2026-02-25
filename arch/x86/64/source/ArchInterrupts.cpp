@@ -130,11 +130,10 @@ extern "C" void arch_saveThreadRegisters(uint64* base, uint64 error)
   struct interrupt_registers* iregisters;
   iregisters = (struct interrupt_registers*) (base + sizeof(struct context_switch_registers)/sizeof(uint64) + error);
   ArchThreadRegisters* info = currentThreadRegisters;
-  asm("fnsave %[fpu]\n"
-      "frstor %[fpu]\n"
-      :
-      : [fpu]"m"((info->fpu))
-      :);
+  if (currentThread && currentThread->switch_to_userspace_)
+  {
+    asm volatile("fxsave (%0)" :: "r"(info->fpu) : "memory");
+  }
   info->rsp = iregisters->rsp;
   info->rip = iregisters->rip;
   info->cs = iregisters->cs;
@@ -181,8 +180,12 @@ extern "C" void arch_contextSwitch()
   assert(currentThread->isStackCanaryOK() && "Kernel stack corruption detected.");
   ArchThreadRegisters info = *currentThreadRegisters; // optimization: local copy produces more efficient code in this case
   g_tss.rsp0 = info.rsp0;
+  if (currentThread->switch_to_userspace_)
+  {
+    asm volatile("fxrstor (%0)" :: "r"(info.fpu));
+  }
 
-  asm volatile("frstor %[fpu]\n"
+  asm volatile(
       "mov %[cr3], %%cr3\n"
       "push %[ss]\n"
       "push %[rsp]\n"

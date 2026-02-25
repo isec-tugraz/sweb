@@ -61,6 +61,7 @@ pointer KernelMemoryManager::allocateMemory(size_t requested_size, pointer calle
     unlockKMM();
 
   debug(KMM, "allocateMemory returns address: %zx \n", ptr);
+  assert(0 == (ptr & 0xf) && "kmalloc pointer is not 16-byte aligned, our heap is broken");
   return ptr;
 }
 pointer KernelMemoryManager::private_AllocateMemory(size_t requested_size, pointer called_by)

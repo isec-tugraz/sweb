@@ -20,6 +20,26 @@ extern void* kernel_end_address;
 multiboot_info_t* multi_boot_structure_pointer = (multiboot_info_t*)0xDEADDEAD; // must not be in bss segment
 static struct multiboot_remainder mbr __attribute__ ((section (".data"))); // must not be in bss segment
 
+struct CPUID_info
+{
+  uint32 eax;
+  uint32 ebx;
+  uint32 ecx;
+  uint32 edx;
+};
+
+CPUID_info get_cpuid(uint64 leaf, uint64 subleaf=0)
+{
+  CPUID_info ret;
+  asm ("cpuid" : "=a"(ret.eax), "=b"(ret.ebx), "=c"(ret.ecx), "=d"(ret.edx) : "a"(leaf), "c"(subleaf));
+  return ret;
+}
+uint64 set_cr4_bits(uint64 bitmask)
+{
+  asm ("mov %%cr4, %%rax; or %%rax, %0; mov %0, %%cr4":"+r"(bitmask)::"rax", "memory");
+  return bitmask;
+}
+
 extern "C" void parseMultibootHeader()
 {
   uint32 i;
@@ -209,6 +229,8 @@ struct GDTPtr
     uint64 addr;
 }__attribute__((__packed__)) gdt_ptr;
 
+
+
 extern "C" void entry64()
 {
   PRINT("Parsing Multiboot Header...\n");
@@ -233,19 +255,20 @@ extern "C" void entry64()
       : : "a"(KERNEL_DS) : "memory");
   asm("ltr %%ax" : : "a"(KERNEL_TSS));
 
+  auto cpuid = get_cpuid(0);
   PRINT("Check SMEP support...\n");
-  uint32 ebx=0;
-  asm volatile("mov $7, %%rax\n"
-               "xor %%rcx, %%rcx\n"
-               "cpuid\n"
-               :"=b"(ebx)::"rax", "rcx", "rdx");
-  if (ebx & (1<<7))
+  assert((cpuid.eax >= 1) && "CPU does not support any features");
+  cpuid = get_cpuid(7);
+  if (cpuid.ebx & (1<<7))
   {
     PRINT("Enable SMEP...\n");
-    asm volatile("mov %%cr4,%%rax\n"
-                 "or $0x100000, %%rax\n"
-                 "mov %%rax,%%cr4\n" ::: "rax", "memory");
+    set_cr4_bits(1ULL<<20);
   }
+  cpuid = get_cpuid(1);
+  assert((cpuid.edx & 1U<<25) && "CPU does not support SSE");
+  PRINT("Enabling SSE...\n");
+  set_cr4_bits(1ULL<<10 | 1ULL<<9);
+
 
   PRINT("Calling startup()...\n");
   asm("jmp *%[startup]" : : [startup]"r"(startup));
