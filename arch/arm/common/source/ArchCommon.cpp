@@ -6,7 +6,7 @@
 #include "TextConsole.h"
 #include "FrameBufferConsole.h"
 #include "backtrace.h"
-#include "Stabs2DebugInfo.h"
+#include "SWEBDebugInfo.h"
 
 #define PHYSICAL_MEMORY_AVAILABLE 8*1024*1024
 
@@ -24,7 +24,7 @@ pointer ArchCommon::getFreeKernelMemoryStart()
 
 pointer ArchCommon::getFreeKernelMemoryEnd()
 {
-   return (pointer)getModuleEndAddress(0);
+   return (pointer)&kernel_end_address;
 }
 
 
@@ -35,17 +35,17 @@ uint32 ArchCommon::haveVESAConsole(uint32 is_paging_set_up __attribute__((unused
 
 uint32 ArchCommon::getNumModules(uint32 is_paging_set_up __attribute__((unused)))
 {
-  return 1;
+  return 0;
 }
 
-uint32 ArchCommon::getModuleStartAddress(uint32 num __attribute__((unused)), uint32 is_paging_set_up __attribute__((unused)))
+uint32 ArchCommon::getModuleStartAddress(uint32 num __attribute__((unused)))
 {
-  return 0x80000000U;
+  assert(false);
 }
 
-uint32 ArchCommon::getModuleEndAddress(uint32 num __attribute__((unused)), uint32 is_paging_set_up __attribute__((unused)))
+uint32 ArchCommon::getModuleEndAddress(uint32 num __attribute__((unused)))
 {
-  return getKernelEndAddress();
+  assert(false);
 }
 
 uint32 ArchCommon::getVESAConsoleHeight()
@@ -93,15 +93,10 @@ Stabs2DebugInfo const *kernel_debug_info = 0;
 
 void ArchCommon::initDebug()
 {
-  extern unsigned char stab_start_address_nr;
-  extern unsigned char stab_end_address_nr;
+  extern unsigned char swebdbg_start_address_nr;
+  extern unsigned char swebdbg_end_address_nr;
 
-  extern unsigned char stabstr_start_address_nr;
-
-  kernel_debug_info = new Stabs2DebugInfo((char const *)&stab_start_address_nr,
-                                          (char const *)&stab_end_address_nr,
-                                          (char const *)&stabstr_start_address_nr);
-
+  kernel_debug_info = new SWEBDebugInfo((const char *)&swebdbg_start_address_nr, (const char*)&swebdbg_end_address_nr);
 }
 
 extern "C" void halt()

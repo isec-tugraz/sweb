@@ -274,12 +274,12 @@ void readCommand() {
 void handleCommand() {
   int arg_counter = splitCommandAndArguments();
   if(SHELL_ENABLE_DEBUG_ARGS) {
-    printf("Captured Command = %s (%ld)\n", command, strlen(command));
+    printf("Captured Command = %s (%zu)\n", command, strlen(command));
     for(int i = 0; i < arg_counter; ++i) {
       // Split up due to 256 byte printf limit
       printf("Arg #%d: ", i  + 1);
       printf("%s", args[i]);
-      printf(" (%ld)\n", strlen(args[i]));
+      printf(" (%zu)\n", strlen(args[i]));
     }
   }
 
@@ -316,7 +316,7 @@ void handleCommand() {
       // Split up due to 256 byte printf limit
       printf("Unknown command: ");
       printf("%s", command);
-      printf(" (%ld)\n ", strlen(command));
+      printf(" (%zu)\n ", strlen(command));
     }
     return;
   }

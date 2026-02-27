@@ -3,7 +3,6 @@
 #define STRING_SAVE
 
 #include "types.h"
-#include "paging-definitions.h"
 
 /**
  * Convert a define to a string.

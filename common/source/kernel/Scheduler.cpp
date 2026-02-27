@@ -30,6 +30,7 @@ Scheduler::Scheduler()
 {
   block_scheduling_ = 0;
   ticks_ = 0;
+  unfinished_cleanup_counter_ = 0;
   addNewThread(&cleanup_thread_);
   addNewThread(&idle_thread_);
 }
@@ -41,6 +42,11 @@ void Scheduler::schedule()
   {
     debug(SCHEDULER, "schedule: currently blocked\n");
     return;
+  }
+
+  if (currentThread == &cleanup_thread_ && unfinished_cleanup_counter_ > 5)
+  {
+    debug(SCHEDULER, "schedule: WARNING - cleanup_thread is being descheduled before completing cleanup.\n");
   }
 
   auto it = threads_.begin();
@@ -126,9 +132,11 @@ void Scheduler::cleanupDeadThreads()
   unlockScheduling();
   if (thread_count > 0)
   {
+    ArchThreads::atomic_set(unfinished_cleanup_counter_, thread_count);
     for (uint32 i = 0; i < thread_count; ++i)
     {
       delete destroy_list[i];
+      ArchThreads::atomic_add(unfinished_cleanup_counter_, -1);
     }
     debug(SCHEDULER, "cleanupDeadThreads: done\n");
   }

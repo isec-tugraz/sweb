@@ -15,16 +15,16 @@ void canon_hdr(Hdr<Elf64, byte_order::native> *out, const void *data,
                 switch (ei_data) {
                 case elfdata::lsb:
                         out->from(*(Hdr<Elf32, byte_order::lsb>*)data);
-                        break;
+                        return;
                 case elfdata::msb:
                         out->from(*(Hdr<Elf32, byte_order::msb>*)data);
-                        break;
+                        return;
                 } // fallthrough
         case elfclass::_64:
                 switch (ei_data) {
                 case elfdata::lsb:
                         out->from(*(Hdr<Elf64, byte_order::lsb>*)data);
-                        break;
+                        return;
                 case elfdata::msb:
                         out->from(*(Hdr<Elf64, byte_order::msb>*)data);
                         return;
