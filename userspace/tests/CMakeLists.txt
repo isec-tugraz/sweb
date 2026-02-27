@@ -1,4 +1,4 @@
-project(userspace_tests)
+project(userspace_tests LANGUAGES C CXX)
 include(../../arch/${ARCH}/CMakeLists.userspace)
 
 # Put userspace libraries and executables in seperated paths
@@ -11,7 +11,8 @@ set($ENV{USERSPACE_NAMES} "")
 set(USERSPACE_TESTS_COMPILE_OPTIONS)
 set(USERSPACE_TESTS_LINKER_OPTIONS -Wl,-Ttext=0x8000000 -Wl,--build-id=none -Wl,-whole-archive)
 
-set(FINAL_USERSPACE_TESTS_COMPILE_OPTIONS ${ARCH_USERSPACE_COMPILE_OPTIONS} ${USERSPACE_TESTS_COMPILE_OPTIONS})
+set(FINAL_USERSPACE_TESTS_COMPILE_OPTIONS_C ${ARCH_USERSPACE_COMPILE_OPTIONS_C} ${USERSPACE_TESTS_COMPILE_OPTIONS})
+set(FINAL_USERSPACE_TESTS_COMPILE_OPTIONS_CXX ${ARCH_USERSPACE_COMPILE_OPTIONS_CXX} ${USERSPACE_TEST_COMPILE_OPTIONS})
 set(FINAL_USERSPACE_TESTS_LINKER_OPTIONS ${ARCH_LD_ARGUMENTS} ${ARCH_USERSPACE_LINKER_OPTIONS} ${USERSPACE_TESTS_LINKER_OPTIONS})
 
 file(GLOB userspace_tests_SOURCES ${SOURCE_WILDCARDS})
@@ -19,9 +20,20 @@ file(GLOB userspace_tests_SOURCES ${SOURCE_WILDCARDS})
 # Create own executable for every .c file and link with libc
 foreach(curFile ${userspace_tests_SOURCES})
   get_filename_component(curName ${curFile} NAME_WE)
+  get_filename_component(curExt ${curFile} EXT)
 
   add_executable(${curName}.sweb ${curFile})
+
+  target_compile_options(${curName}.sweb PRIVATE
+    $<$<COMPILE_LANGUAGE:C>:${FINAL_USERSPACE_TESTS_COMPILE_OPTIONS_C}>
+    $<$<COMPILE_LANGUAGE:CXX>:${FINAL_USERSPACE_TESTS_COMPILE_OPTIONS_CXX}>
+  )
+
   target_link_libraries(${curName}.sweb ${FINAL_USERSPACE_TESTS_LINKER_OPTIONS} userspace_libc ${ARCH_APPEND_LD_ARGUMENTS})
+
+  if(curExt STREQUAL ".cpp")
+    target_link_libraries(${curName}.sweb userspace_libcpp)
+  endif()
 
   ADD_DEBUG_INFO(${curName}.sweb)
 

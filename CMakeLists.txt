@@ -137,7 +137,11 @@ set(ENV{LIBRARY_NAMES})
 
 #Create target for userspace libc (Need to to that here because some files (e.g. syscall.c) are all over the place)
 add_library(userspace_libc "")
-target_compile_options(userspace_libc PUBLIC ${ARCH_USERSPACE_COMPILE_OPTIONS})
+target_compile_options(userspace_libc PRIVATE ${ARCH_USERSPACE_COMPILE_OPTIONS_C})
+
+#Do the same for userspace libcpp
+add_library(userspace_libcpp "")
+target_compile_options(userspace_libcpp PRIVATE ${ARCH_USERSPACE_COMPILE_OPTIONS_CXX})
 
 #Add the source directories
 add_subdirectory(arch)
