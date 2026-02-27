@@ -21,7 +21,7 @@ void printGuestDebug(char ch, size_t id) {
   ScopeLock lock(vmprintlock);
   ustl::string &str = print_map[id];
   if (str.empty()) {
-    str += "[" + ustl::to_string(id) + "] ";
+    str += "[" + ustl::to_string(id) + "]";
   }
   str += ch;
   if (ch == '\n') {
