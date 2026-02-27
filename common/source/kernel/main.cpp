@@ -27,6 +27,8 @@
 #include "user_progs.h"
 #include "ArchHypervisor.h"
 
+void setupGuestPrinting();
+
 extern void* kernel_end_address;
 
 uint8 boot_stack[0x4000] __attribute__((aligned(0x4000)));
@@ -113,6 +115,8 @@ extern "C" void startup()
   ArchInterrupts::enableKBD();
 
   ArchHypervisor::instance();
+
+  setupGuestPrinting();
 
   debug(MAIN, "Adding Kernel threads\n");
   Scheduler::instance()->addNewThread(main_console);

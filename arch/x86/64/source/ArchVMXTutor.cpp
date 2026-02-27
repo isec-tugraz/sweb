@@ -3,11 +3,36 @@
 
 #include "ArchVMXDefinitions.h"
 #include "kprintf.h"
+#include "debug.h"
+#include "Mutex.h"
+#include "ScopeLock.h"
+#include "umap.h"
+#include "ustring.h"
+
+
+static Mutex vmprintlock("vmprintlock");
+static ustl::map<size_t, ustl::string> print_map;
+void setupGuestPrinting() {
+  new (&vmprintlock) Mutex("vmprintlock");
+  new (&print_map) ustl::map<size_t, ustl::string>;
+}
+// Print all guest debug output line buffered with this function
+void printGuestDebug(char ch, size_t id) {
+  ScopeLock lock(vmprintlock);
+  ustl::string &str = print_map[id];
+  if (str.empty()) {
+    str += "[" + ustl::to_string(id) + "] ";
+  }
+  str += ch;
+  if (ch == '\n') {
+    debug(GUEST, "%s", str.c_str());
+    str.clear();
+  }
+}
 
 #define VMX_DUMP(_x) kprintfd("'" #_x "' : %016lx,\n", vmread(_x))
 #define MSR_DUMP(_x) kprintfd("'" #_x "' : %016lx,\n", rdmsr(_x))
 
-// this function VMX_DUMPs the complete VMX config as base64
 void dump_vmx_msrs() {
     kprintfd("msrs = {\n");
     MSR_DUMP(MSR_IA32_FEATURE_CONTROL);

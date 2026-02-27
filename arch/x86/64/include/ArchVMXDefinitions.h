@@ -30,6 +30,8 @@ extern void dump_vmx_msrs();
 // use vmptrld
 extern void dump_vmx_config();
 
+extern void printGuestDebug(char ch, size_t id);
+
 extern void   vmwrite(uint64 field, uint64 value);
 extern uint64 vmread(uint64 field);
 
