@@ -1,8 +1,10 @@
 #include "../../../common/include/kernel/syscall-definitions.h"
 #include "sys/syscall.h"
 #include "vm.h"
+#include "types.h"
+#include "assert.h"
 
-extern "C" void test_end();
+void test_end();
 
 __attribute__((naked))
 void test_begin() {
@@ -16,7 +18,7 @@ void test_begin() {
   )");
 }
 
-#define TEST_SIZE ((pointer)test_end - (pointer)test_begin)
+#define TEST_SIZE ((size_t)test_end - (size_t)test_begin)
 
 int main(int argc, char *argv[]) {
     assert(vm_launch_mem((void*)test_begin, TEST_SIZE) == 0);
