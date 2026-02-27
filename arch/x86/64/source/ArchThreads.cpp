@@ -17,10 +17,7 @@ void ArchThreads::initialise()
   asm volatile ("movq %%cr0, %%rax\n"
           "and $0xFFFB, %%ax\n"
           "or $0x2, %%ax\n"
-          "movq %%rax, %%cr0\n"
-          "movq %%cr4, %%rax\n"
-          "orq $0x200, %%rax\n"
-          "movq %%rax, %%cr4\n" : : : "rax");
+          "movq %%rax, %%cr0\n": : : "rax", "memory");
 }
 void ArchThreads::setAddressSpace(Thread *thread, ArchMemory& arch_memory)
 {
@@ -46,15 +43,6 @@ void ArchThreads::createBaseThreadRegisters(ArchThreadRegisters *&info, void* st
   info->rsp     = (size_t)stack;
   info->rbp     = (size_t)stack;
   info->rip     = (size_t)start_function;
-
-  /* fpu (=fninit) */
-  info->fpu[0] = 0xFFFF037F;
-  info->fpu[1] = 0xFFFF0000;
-  info->fpu[2] = 0xFFFFFFFF;
-  info->fpu[3] = 0x00000000;
-  info->fpu[4] = 0x00000000;
-  info->fpu[5] = 0x00000000;
-  info->fpu[6] = 0xFFFF0000;
 }
 
 void ArchThreads::createKernelRegisters(ArchThreadRegisters *&info, void* start_function, void* kernel_stack)
@@ -77,6 +65,7 @@ void ArchThreads::createUserRegisters(ArchThreadRegisters *&info, void* start_fu
   info->es      = USER_DS;
   info->ss      = USER_SS;
   info->rsp0    = (size_t)kernel_stack;
+  info->fpu = new uint8[512]{};
   assert(info->cr3);
 }
 
