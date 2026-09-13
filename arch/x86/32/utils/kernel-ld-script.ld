@@ -33,6 +33,7 @@ SECTIONS
     LS_Data = .;
     data_start_address = .;
     *(.data)
+    *(.data.*)
     . = ALIGN(4096);
     *(.gdt_stuff)
     . = ALIGN(4096);
@@ -46,6 +47,7 @@ SECTIONS
     LS_Bss = .;
     bss_start_address = .;
     *(.bss)
+    *(.bss.*)
     . = ALIGN(4096);
     bss_end_address = .;
 
