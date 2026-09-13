@@ -40,7 +40,7 @@ SECTIONS
   {
     LS_Bss = .;
     bss_start_address = .;
-    *(.bss)
+    *(.bss*)
     . = ALIGN(4096);
     *(COMMON)
     bss_end_address = .;
