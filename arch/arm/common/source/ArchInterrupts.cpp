@@ -14,18 +14,17 @@ extern uint8 boot_stack[];
          bic r0, r0, #0xdf \n\
          orr r0, r0, # " MODE " \n\
          msr cpsr, r0 \n\
-        ");\
+        " : : : "r0", "memory");\
 
 #define INTERRUPT_ENTRY() \
   asm("sub lr, lr, #4"); \
   SWI_ENTRY()
 
 #define SWI_ENTRY() \
-  asm("push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12}");\
-  asm("add sp, sp, #0x34");\
+  asm("push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12}\n"\
+      "add sp, sp, #0x34");\
   asm("mov %[v], lr" : [v]"=r" (currentThreadRegisters->pc));\
-  asm("mrs r0, spsr"); \
-  asm("mov %[v], r0" : [v]"=r" (currentThreadRegisters->cpsr));\
+  asm volatile("mrs %[v], spsr" : [v]"=r" (currentThreadRegisters->cpsr));\
   SWITCH_CPU_MODE("0xdf");\
   asm("mov %[v], sp" : [v]"=r" (currentThreadRegisters->sp));\
   asm("mov %[v], lr" : [v]"=r" (currentThreadRegisters->lr));\
@@ -38,11 +37,10 @@ extern uint8 boot_stack[];
   SWITCH_CPU_MODE("0xd3");\
   asm("sub sp, sp, #0x34");\
   memcpy(((uint32*)boot_stack) + 0x1000 - 13,currentThreadRegisters->r,sizeof(currentThreadRegisters->r));\
-  asm("mov lr, %[v]" : : [v]"r" (currentThreadRegisters->pc));\
-  asm("mov r0, %[v]" : : [v]"r" (currentThreadRegisters->cpsr));\
-  asm("msr spsr, r0"); \
-  asm("pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12}");\
-  asm("movs pc, lr");
+  asm volatile("msr spsr, %[ps]\n"\
+      "mov lr, %[pc]\n"\
+      "pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12}\n"\
+      "movs pc, lr" : : [ps]"r" (currentThreadRegisters->cpsr), [pc]"r" (currentThreadRegisters->pc) : "memory");
 
 uint32 arm4_cpsrget()
 {
@@ -54,7 +52,7 @@ uint32 arm4_cpsrget()
 
 void arm4_cpsrset(uint32 r)
 {
-  asm volatile ("msr cpsr, %[ps]" : : [ps]"r" (r));
+  asm volatile ("msr cpsr, %[ps]" : : [ps]"r" (r) : "memory");
 }
 
 #define INTERRUPT_HANDLER(TYPE) \
@@ -170,12 +168,13 @@ extern "C" void memory_barrier() // from https://github.com/raspberrypi/firmware
       "mcr p15, 0, %[v], c7, c10, 4\n" //      Data Synchronization Barrier
       "mcr p15, 0, %[v], c7, c10, 5\n" //      Data Memory Barrier
       :
-      : [v]"r"(0));
+      : [v]"r"(0)
+      : "memory");
 }
 
 extern "C" void switchTTBR0(uint32 ttbr0)
 {
   memory_barrier();
-  asm("mcr p15, 0, %[v], c2, c0, 0" : : [v]"r" (ttbr0));
+  asm("mcr p15, 0, %[v], c2, c0, 0" : : [v]"r" (ttbr0) : "memory");
   memory_barrier();
 }
