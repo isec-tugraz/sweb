@@ -46,21 +46,16 @@ void pageFaultHandler(uint32 address, uint32 type)
 {
   if(type != ARM4_XRQ_ABRTP)
   {
-    asm("mrc p15, 0, r4, c6, c0, 0\n\
-         mov %[v], r4\n": [v]"=r" (address));
+    asm volatile("mrc p15, 0, %[v], c6, c0, 0" : [v]"=r" (address));
   }
 
   size_t instruction_fault = 0;
   size_t data_fault = 0;
 
-  asm("mrc p15, 0, r4, c5, c0, 0\n\
-       mov %[v], r4\n": [v]"=r" (data_fault));
-  asm("mov r4, #0x0\n\
-      mcr p15, 0, r4, c5, c0, 0");
-  asm("mrc p15, 0, r4, c5, c0, 1\n\
-       mov %[v], r4\n": [v]"=r" (instruction_fault));
-  asm("mov r4, #0x0\n\
-      mcr p15, 0, r4, c5, c0, 1");
+  asm volatile("mrc p15, 0, %[v], c5, c0, 0" : [v]"=r" (data_fault));
+  asm volatile("mcr p15, 0, %[v], c5, c0, 0" : : [v]"r" (0));
+  asm volatile("mrc p15, 0, %[v], c5, c0, 1" : [v]"=r" (instruction_fault));
+  asm volatile("mcr p15, 0, %[v], c5, c0, 1" : : [v]"r" (0));
 
   bool present, writing, fetch;
   size_t status;
