@@ -86,9 +86,6 @@ void ArchBoardSpecific::frameBufferInit()
 
 void ArchBoardSpecific::onIdle()
 {
-  keyboard_irq_handler(); // TODO: this is not only ugly polling, but we're losing keys all the time
-  // and this is in an ugly place for keyboard handling! why is it here? we would have needed a whole new thread otherwise
-  // the usb stack should work with less dynamic memory and more stack variables, then it would be less complicated
 }
 
 void ArchBoardSpecific::enableTimer()
@@ -117,11 +114,16 @@ void ArchBoardSpecific::disableTimer()
 
 void ArchBoardSpecific::enableKBD()
 {
-
+  *(volatile uint32*)(LOCAL_PIC_BASE + 0x0C) = 0; // route GPU interrupts to core 0
+  *(volatile uint32*)(SERIAL_BASE + SERIAL_CONTROL_REGISTER) |= (1 << 0) | (1 << 8) | (1 << 9);
+  *(volatile uint32*)(SERIAL_BASE + SERIAL_INTERRUPT_MASK_REGISTER) |= SERIAL_RECEIVE_INTERRUPTS;
+  *(volatile uint32*)(PIC_BASE + 0x14) = 1 << 25; // UART IRQ 57
 }
 
 void ArchBoardSpecific::disableKBD()
 {
+  *(volatile uint32*)(PIC_BASE + 0x20) = 1 << 25;
+  *(volatile uint32*)(SERIAL_BASE + SERIAL_INTERRUPT_MASK_REGISTER) &= ~SERIAL_RECEIVE_INTERRUPTS;
 }
 
 void ArchBoardSpecific::keyboard_irq_handler()
@@ -147,6 +149,9 @@ void ArchBoardSpecific::timer0_irq_handler()
 #define IRQ(X) ((*pic) & (1 << X))
 void ArchBoardSpecific::irq_handler()
 {
+  if (*(volatile uint32*)(PIC_BASE + 0x08) & (1 << 25))
+    keyboard_irq_handler();
+
   uint32* pic = (uint32*)PIC_BASE;
   if (IRQ(0))
     timer0_irq_handler();

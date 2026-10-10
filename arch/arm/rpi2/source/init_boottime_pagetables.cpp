@@ -52,6 +52,7 @@ extern "C" void initialiseBootTimePaging()
   mapBootTimePage(pde_start,0x860,mmio_base + 2);  // pl011
   mapBootTimePage(pde_start,0x8C0,mmio_base + 3);  // emmc
   mapBootTimePage(pde_start,0x900,mmio_base);  // most devices (ic, timer, gpu, ...)
+  mapBootTimePage(pde_start,0x901,0x400);  // local interrupt controller
 
   mapBootTimePage(pde_start,0x909,mmio_base + 9);  // map for csud
 
