@@ -5,6 +5,14 @@
 #include "offsets.h"
 #include "kstring.h"
 
+static void invalidateTLB()
+{
+  asm volatile("dsb sy\n"
+               "mcr p15, 0, %[v], c8, c7, 0\n"
+               "dsb sy\n"
+               "isb" : : [v]"r"(0) : "memory");
+}
+
 #define PT_SIZE 1024
 #define PD_SIZE 16384
 
@@ -256,6 +264,7 @@ void ArchMemory::mapKernelPage(uint32 virtual_page, uint32 physical_page)
   pte_base[pte_vpn].permissions = PAGE_PERMISSION_KERNEL;
   pte_base[pte_vpn].page_ppn = physical_page + PHYS_OFFSET_4K;
   pte_base[pte_vpn].size = PTE_SIZE_SMALL;
+  invalidateTLB();
 }
 
 void ArchMemory::unmapKernelPage(uint32 virtual_page)
@@ -265,9 +274,10 @@ void ArchMemory::unmapKernelPage(uint32 virtual_page)
   uint32 pte_vpn = virtual_page % PAGE_TABLE_ENTRIES;
   assert(page_directory[pde_vpn].page.size == PDE_SIZE_PT && "kernel page table has to be mapped already");
   PageTableEntry *pte_base = getIdentAddressOfPT(page_directory, pde_vpn);
-  assert(pte_base[pte_vpn].size != PTE_SIZE_SMALL && "tried to unmap page but there was no page mapped");
+  assert(pte_base[pte_vpn].size == PTE_SIZE_SMALL && "tried to unmap page but there was no page mapped");
   pte_base[pte_vpn].size = PTE_SIZE_NONE;
   pte_base[pte_vpn].permissions = PAGE_PERMISSION_NONE;
+  invalidateTLB();
   PageManager::instance()->freePPN(pte_base[pte_vpn].page_ppn - PHYS_OFFSET_4K);
 }
 
