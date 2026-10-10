@@ -54,8 +54,6 @@ extern "C" void initialiseBootTimePaging()
   mapBootTimePage(pde_start,0x900,mmio_base);  // most devices (ic, timer, gpu, ...)
   mapBootTimePage(pde_start,0x901,0x400);  // local interrupt controller
 
-  mapBootTimePage(pde_start,0x909,mmio_base + 9);  // map for csud
-
   for (i = 0; i < 8; ++i)
     mapBootTimePage(pde_start,0xb00 + i,0x5c0 +i);  // framebuffer TODO: this might be not necessary
   // still plenty of room for more memory mapped devices

@@ -231,8 +231,6 @@ class KeyboardManager
 
     uint32 extended_scancode;
     uint32 keyboard_status_;
-    uint32 usb_kbd_addr_;
-    uint32 current_key_;
     uint32 next_is_up_;
 
   protected:
