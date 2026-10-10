@@ -39,10 +39,8 @@
 
 KeyboardManager *KeyboardManager::instance_ = 0;
 
-extern struct UsbDevice *Devices[];
-
 KeyboardManager::KeyboardManager() :
-    keyboard_buffer_(256), extended_scancode(0), keyboard_status_(0), usb_kbd_addr_(0), current_key_(0), next_is_up_(0)
+    keyboard_buffer_(256), extended_scancode(0), keyboard_status_(0), next_is_up_(0)
 {
 
 

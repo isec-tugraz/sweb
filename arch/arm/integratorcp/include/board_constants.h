@@ -5,6 +5,5 @@
 #define SERIAL_BUFFER_FULL (1 << 5)
 
 #define PIC_BASE 0x84000008
-#define HCD_DESIGNWARE_BASE ((void*)0x0)
 #define BOARD_LOAD_BASE 0
 
