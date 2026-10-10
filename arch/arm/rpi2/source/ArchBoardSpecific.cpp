@@ -90,16 +90,11 @@ void ArchBoardSpecific::onIdle()
 
 void ArchBoardSpecific::enableTimer()
 {
-  uint32* pic_base_enable = (uint32*)0x9000B218;
-  *pic_base_enable = 0x1;
-
-  uint32* timer_load = (uint32*)0x9000B400;
-  //uint32* timer_value = timer_load + 1;
-  *timer_load = 0x800;
-  uint32* timer_control = timer_load + 2;
-  *timer_control = (1 << 7) | (1 << 5) | (1 << 2);
-  uint32* timer_clear = timer_load + 3;
-  *timer_clear = 0x1;
+  *(volatile uint32*)(LOCAL_PIC_BASE + 0x0C) = 0; // route GPU interrupts to core 0
+  // The system timer runs at 1 MHz. Compare 0 and 2 are reserved for the GPU.
+  *(volatile uint32*)SYSTEM_TIMER_BASE = 1 << 1;
+  *(volatile uint32*)(SYSTEM_TIMER_BASE + 0x10) = *(volatile uint32*)(SYSTEM_TIMER_BASE + 0x04) + 50000; // 20 Hz
+  *(volatile uint32*)(PIC_BASE + 0x10) = 1 << 1; // system timer compare 1
 }
 
 void ArchBoardSpecific::setTimerFrequency(uint32 freq)
@@ -110,6 +105,8 @@ void ArchBoardSpecific::setTimerFrequency(uint32 freq)
 
 void ArchBoardSpecific::disableTimer()
 {
+  *(volatile uint32*)(PIC_BASE + 0x1C) = 1 << 1;
+  *(volatile uint32*)SYSTEM_TIMER_BASE = 1 << 1;
 }
 
 void ArchBoardSpecific::enableKBD()
@@ -135,25 +132,22 @@ extern void timer_irq_handler();
 
 void ArchBoardSpecific::timer0_irq_handler()
 {
-  uint32* timer_raw = (uint32*)0x9000B410;
-  if ((*timer_raw & 0x1) != 0)
+  if (*(volatile uint32*)SYSTEM_TIMER_BASE & (1 << 1))
   {
     assert(!ArchInterrupts::testIFSet());
-    uint32* timer_clear = (uint32*)0x9000B40C;
-    *timer_clear = 0x1;
+    *(volatile uint32*)SYSTEM_TIMER_BASE = 1 << 1;
+    *(volatile uint32*)(SYSTEM_TIMER_BASE + 0x10) = *(volatile uint32*)(SYSTEM_TIMER_BASE + 0x04) + 50000;
 
     timer_irq_handler();
   }
 }
 
-#define IRQ(X) ((*pic) & (1 << X))
 void ArchBoardSpecific::irq_handler()
 {
   if (*(volatile uint32*)(PIC_BASE + 0x08) & (1 << 25))
     keyboard_irq_handler();
 
-  uint32* pic = (uint32*)PIC_BASE;
-  if (IRQ(0))
+  if (*(volatile uint32*)(PIC_BASE + 0x04) & (1 << 1))
     timer0_irq_handler();
 }
 
