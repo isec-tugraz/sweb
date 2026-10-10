@@ -5,6 +5,14 @@
 #include "offsets.h"
 #include "kstring.h"
 
+static void invalidateTLB()
+{
+    asm volatile("dsb ishst\n"
+                 "tlbi vmalle1is\n"
+                 "dsb ish\n"
+                 "isb" : : : "memory");
+}
+
 Level1Entry kernel_paging_level1[KERNEL_LEVEL1_TABLES * LEVEL1_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
 //one page for ident and one for the kernel pages
 Level2Entry kernel_paging_level2[KERNEL_LEVEL2_TABLES * LEVEL2_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
@@ -251,11 +259,12 @@ void ArchMemory::mapKernelPage(size_t virtual_page, size_t physical_page)
 
     *((size_t*)&(level3_entry[m.level3_index])) = 0;
 
-    level3_entry[m.level3_index].entry_descriptor_type = ENTRY_DESCRIPTOR_PAGE;
     level3_entry[m.level3_index].memory_attributes_index = MEMORY_ATTR_STD;
     level3_entry[m.level3_index].shareability_field = SHARE_ISH;
     level3_entry[m.level3_index].access_flag = ACCESS_FLAG;
     level3_entry[m.level3_index].page_address = physical_page;
+    level3_entry[m.level3_index].entry_descriptor_type = ENTRY_DESCRIPTOR_PAGE;
+    invalidateTLB();
 }
 
 void ArchMemory::unmapKernelPage(size_t virtual_page)
@@ -272,6 +281,7 @@ void ArchMemory::unmapKernelPage(size_t virtual_page)
 
     *((size_t*)&(level3_entry[m.level3_index])) = 0;
 
+    invalidateTLB();
     PageManager::instance()->freePPN(m.page_ppn);
 }
 
