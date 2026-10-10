@@ -4,7 +4,7 @@
 #include "SpinLock.h"
 #include "assert.h"
 
-class MallocSegment
+class __attribute__((aligned(16))) MallocSegment
 {
   public:
     /**
