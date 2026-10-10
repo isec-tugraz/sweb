@@ -311,7 +311,6 @@ MAKE_ARCH_TARGET(x86_32 x86/32 "")
 MAKE_ARCH_TARGET(x86_32_pae x86/32/pae "")
 MAKE_ARCH_TARGET(x86_64 x86/64 "")
 
-MAKE_ARCH_TARGET(arm_icp arm/integratorcp "")
 MAKE_ARCH_TARGET(arm_rpi2 arm/rpi2 "")
 MAKE_ARCH_TARGET(armv8_rpi3 armv8/rpi3 "-DVIRTUALIZED_QEMU=1")
 MAKE_ARCH_TARGET(armv8_rpi3_hardware armv8/rpi3 "")
