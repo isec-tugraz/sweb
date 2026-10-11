@@ -36,6 +36,7 @@ void DeviceFSSuperblock::addDevice(Inode* device_inode, const char* node_name)
   Dentry* fdntr = new Dentry(device_inode, s_root_, node_name);
 
   assert(device_inode->mknod(fdntr) == 0);
+  ScopeLock lock(superblock_lock_);
   all_inodes_.push_back(device_inode);
 }
 

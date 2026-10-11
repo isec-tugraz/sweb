@@ -40,6 +40,8 @@ public:
    */
   bool isFree();
 
+  bool isHeldByCurrentThread() const;
+
 private:
 
   /**
