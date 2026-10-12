@@ -5,7 +5,7 @@
 class Dirent;
 class Dentry;
 class VfsMount;
-class File;
+class KernelFileHandle;
 class VfsSyscall;
 class Path;
 class FileSystemInfo;
@@ -136,7 +136,7 @@ class VfsSyscall
      */
     static uint32 getFileSize(uint32 fd);
 
-    static File* getFile(uint32 fd);
+    static KernelFileHandle* getFileHandle(uint32 fd);
 
   private:
     VfsSyscall();

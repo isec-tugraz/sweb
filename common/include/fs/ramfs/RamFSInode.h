@@ -20,7 +20,7 @@ class RamFSInode : public Inode
     /**
      * Called when a file is opened
      */
-    virtual File* open(Dentry* dentry, uint32 /*flag*/);
+    virtual KernelFileHandle* open(Dentry* dentry, uint32 /*flag*/);
 
     /// read the data from the inode
     /// @param offset offset byte

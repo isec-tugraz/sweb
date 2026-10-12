@@ -4,7 +4,7 @@
 #include "umap.h"
 #include "Mutex.h"
 
-class File;
+class KernelFileHandle;
 
 class FileDescriptorTable
 {
@@ -12,13 +12,13 @@ class FileDescriptorTable
     FileDescriptorTable();
     ~FileDescriptorTable();
 
-    uint32 add(File* file);
+    uint32 add(KernelFileHandle* file_handle);
     int close(uint32 fd);
-    File* get(uint32 fd);
+    KernelFileHandle* get(uint32 fd);
 
   private:
-    File* remove(uint32 fd);
-    ustl::map<uint32, File*> file_descriptors_;
+    KernelFileHandle* remove(uint32 fd);
+    ustl::map<uint32, KernelFileHandle*> file_descriptors_;
     Mutex fd_lock_;
     uint32 next_fd_;
 };

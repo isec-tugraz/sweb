@@ -5,7 +5,7 @@
 #include "Inode.h"
 #include "Dentry.h"
 #include "Superblock.h"
-#include "File.h"
+#include "KernelFileHandle.h"
 #include "FileDescriptorTable.h"
 #include "FileSystemType.h"
 #include "FileSystemInfo.h"
@@ -21,7 +21,7 @@
 #define SEPARATOR '/'
 #define CHAR_DOT '.'
 
-File* VfsSyscall::getFile(uint32 fd)
+KernelFileHandle* VfsSyscall::getFileHandle(uint32 fd)
 {
   return global_file_descriptor_table.get(fd);
 }
@@ -301,8 +301,8 @@ int32 VfsSyscall::open(const char* pathname, uint32 flag)
       return -1;
     }
 
-    File* file = target_inode->open(target_path.dentry_, flag);
-    uint32 fd = global_file_descriptor_table.add(file);
+    KernelFileHandle* file_handle = target_inode->open(target_path.dentry_, flag);
+    uint32 fd = global_file_descriptor_table.add(file_handle);
 
     debug(VFSSYSCALL, "(open) Fd for new open file: %d, flags: %x\n", fd, flag);
     return fd;
@@ -347,8 +347,8 @@ int32 VfsSyscall::open(const char* pathname, uint32 flag)
     Dentry* new_file_dentry = new Dentry(new_file_inode, parent_dir_path.dentry_, new_dentry_name);
     new_file_inode->mkfile(new_file_dentry);
 
-    File* file = new_file_inode->open(new_file_dentry, flag);
-    uint32 fd = global_file_descriptor_table.add(file);
+    KernelFileHandle* file_handle = new_file_inode->open(new_file_dentry, flag);
+    uint32 fd = global_file_descriptor_table.add(file_handle);
 
     debug(VFSSYSCALL, "(open) Fd for new open file: %d, flags: %x\n", fd, flag);
     return fd;
@@ -366,9 +366,9 @@ int32 VfsSyscall::open(const char* pathname, uint32 flag)
 
 int32 VfsSyscall::read(uint32 fd, char* buffer, uint32 count)
 {
-  File* file = getFile(fd);
+  KernelFileHandle* file_handle = getFileHandle(fd);
 
-  if (file == 0)
+  if (file_handle == 0)
   {
     debug(VFSSYSCALL, "(read) Error: the fd does not exist.\n");
     return -1;
@@ -377,14 +377,14 @@ int32 VfsSyscall::read(uint32 fd, char* buffer, uint32 count)
   if (count == 0)
     return 0;
 
-  return file->read(buffer, count, 0);
+  return file_handle->read(buffer, count, 0);
 }
 
 int32 VfsSyscall::write(uint32 fd, const char *buffer, uint32 count)
 {
-  File* file = getFile(fd);
+  KernelFileHandle* file_handle = getFileHandle(fd);
 
-  if (file == 0)
+  if (file_handle == 0)
   {
     debug(VFSSYSCALL, "(write) Error: the fd does not exist.\n");
     return -1;
@@ -393,33 +393,33 @@ int32 VfsSyscall::write(uint32 fd, const char *buffer, uint32 count)
   if (count == 0)
     return 0;
 
-  return file->write(buffer, count, 0);
+  return file_handle->write(buffer, count, 0);
 }
 
 l_off_t VfsSyscall::lseek(uint32 fd, l_off_t offset, uint8 origin)
 {
-  File* file = getFile(fd);
+  KernelFileHandle* file_handle = getFileHandle(fd);
 
-  if (file == 0)
+  if (file_handle == 0)
   {
     debug(VFSSYSCALL, "(lseek) Error: the fd does not exist.\n");
     return -1;
   }
 
-  return file->lseek(offset, origin);
+  return file_handle->lseek(offset, origin);
 }
 
 int32 VfsSyscall::flush(uint32 fd)
 {
-  File* file = getFile(fd);
+  KernelFileHandle* file_handle = getFileHandle(fd);
 
-  if (file == 0)
+  if (file_handle == 0)
   {
     debug(VFSSYSCALL, "(read) Error: the fd does not exist.\n");
     return -1;
   }
 
-  return file->flush();
+  return file_handle->flush();
 }
 
 #ifndef EXE2MINIXFS
@@ -443,13 +443,13 @@ int32 VfsSyscall::umount(const char *dir_name, int32 flag)
 
 uint32 VfsSyscall::getFileSize(uint32 fd)
 {
-  File* file = getFile(fd);
+  KernelFileHandle* file_handle = getFileHandle(fd);
 
-  if (file == 0)
+  if (file_handle == 0)
   {
     debug(VFSSYSCALL, "(read) Error: the fd does not exist.\n");
     return -1;
   }
 
-  return file->getSize();
+  return file_handle->getSize();
 }

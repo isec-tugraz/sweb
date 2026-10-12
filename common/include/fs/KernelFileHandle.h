@@ -30,7 +30,7 @@ class FileDescriptorTable;
 #endif
 
 
-class File
+class KernelFileHandle
 {
   public:
     uint32 uid;
@@ -92,9 +92,9 @@ class File
      * @param dentry the files dentry
      * @param flag the files flag
      */
-    File(Inode* inode, Dentry* dentry, uint32 flag);
+    KernelFileHandle(Inode* inode, Dentry* dentry, uint32 flag);
 
-    virtual ~File();
+    virtual ~KernelFileHandle();
 
 
 
@@ -162,7 +162,7 @@ class File
 
     /**
      * not implemented here
-     * Flush all off the file's write operations. The File will be written to disk.
+     * Flush all off the file's write operations. The file will be written to disk.
      * @return is the error code of the flush operation.
      */
     virtual int32 flush()

@@ -4,7 +4,7 @@
 #include "assert.h"
 #include "Mutex.h"
 #include "ScopeLock.h"
-#include "File.h"
+#include "KernelFileHandle.h"
 
 FileDescriptorTable global_file_descriptor_table;
 
@@ -18,48 +18,48 @@ FileDescriptorTable::~FileDescriptorTable()
   while (!file_descriptors_.empty())
   {
     auto it = file_descriptors_.begin();
-    File* file = it->second;
+    KernelFileHandle* file_handle = it->second;
     file_descriptors_.erase(it->first);
-    file->closeFileDescriptor();
+    file_handle->closeFileDescriptor();
   }
 }
 
-uint32 FileDescriptorTable::add(File* file)
+uint32 FileDescriptorTable::add(KernelFileHandle* file_handle)
 {
-  assert(file);
+  assert(file_handle);
   ScopeLock lock(fd_lock_);
   uint32 fd = next_fd_++;
   assert(file_descriptors_.find(fd) == file_descriptors_.end());
-  file_descriptors_[fd] = file;
-  file->addFileDescriptor();
-  debug(VFS_FILE, "File descriptor table, add fd %u for file %p\n", fd, file);
+  file_descriptors_[fd] = file_handle;
+  file_handle->addFileDescriptor();
+  debug(VFS_FILE, "File descriptor table, add fd %u for file handle %p\n", fd, file_handle);
   return fd;
 }
 
-File* FileDescriptorTable::remove(uint32 fd)
+KernelFileHandle* FileDescriptorTable::remove(uint32 fd)
 {
   ScopeLock lock(fd_lock_);
   auto it = file_descriptors_.find(fd);
   if (it == file_descriptors_.end())
     return 0;
 
-  File* file = it->second;
+  KernelFileHandle* file_handle = it->second;
   file_descriptors_.erase(fd);
   debug(VFS_FILE, "File descriptor table, remove fd %u\n", fd);
-  return file;
+  return file_handle;
 }
 
 int FileDescriptorTable::close(uint32 fd)
 {
-  File* file = remove(fd);
-  if (!file)
+  KernelFileHandle* file_handle = remove(fd);
+  if (!file_handle)
     return -1;
 
-  file->closeFileDescriptor();
+  file_handle->closeFileDescriptor();
   return 0;
 }
 
-File* FileDescriptorTable::get(uint32 fd)
+KernelFileHandle* FileDescriptorTable::get(uint32 fd)
 {
   ScopeLock lock(fd_lock_);
   auto it = file_descriptors_.find(fd);

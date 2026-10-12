@@ -1,15 +1,15 @@
 #pragma once
 
-#include "fs/File.h"
+#include "fs/KernelFileHandle.h"
 
 
-class RamFSFile: public File
+class RamFSFileHandle: public KernelFileHandle
 {
   public:
 
-    RamFSFile ( Inode* inode, Dentry* dentry, uint32 flag );
+    RamFSFileHandle ( Inode* inode, Dentry* dentry, uint32 flag );
 
-    virtual ~RamFSFile();
+    virtual ~RamFSFileHandle();
 
     /**
      * Sets the file position relative to the start of the file, the  end of
@@ -53,7 +53,7 @@ class RamFSFile: public File
     virtual int32 close();
 
     /**
-     * Flushes all off the file's write operations. The File will be written to disk.
+     * Flushes all off the file's write operations. The file will be written to disk.
      * @return is the error code of the flush operation.
      */
     virtual int32 flush();

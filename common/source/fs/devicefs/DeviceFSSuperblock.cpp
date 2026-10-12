@@ -3,7 +3,7 @@
 #include "DeviceFSType.h"
 #include "fs/Dentry.h"
 #include "fs/Inode.h"
-#include "fs/File.h"
+#include "fs/KernelFileHandle.h"
 
 #include "console/kprintf.h"
 
