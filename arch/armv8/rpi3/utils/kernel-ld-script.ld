@@ -53,3 +53,7 @@ SECTIONS
   .ARM.attributes 0 : { *(.ARM.attributes) }
   .comment 0 : { *(.comment) }
 }
+
+ASSERT(entry == LS_Virt, "compiler generated code before the ARMv8 boot entry")
+ASSERT((Vector_table_el1 & 0x7ff) == 0, "ARMv8 exception vector table is not 2 KiB aligned")
+ASSERT(interrupt_dispatch_end - interrupt_dispatch_start == 4, "compiler generated unexpected ARMv8 exception dispatch code")
