@@ -184,12 +184,12 @@ extern "C" void irqHandler_65()
 
 extern "C" void errorHandler(size_t num, size_t eip, size_t cs, size_t spurious);
 extern "C" void arch_pageFaultHandler();
-extern "C" void pageFaultHandler(uint64 address, uint64 error)
+extern "C" void pageFaultHandler(uint64 address, uint64 error, uint64 instruction_pointer)
 {
   auto &regs = *(currentThread->switch_to_userspace_ ? currentThread->user_registers_ : currentThread->kernel_registers_);
 
   if (address >= USER_BREAK && address < KERNEL_START) { // dirty hack due to qemu invoking the pf handler when accessing non canonical addresses
-    errorHandler(0xd, regs.rip, regs.cs, 0);
+    errorHandler(0xd, instruction_pointer, regs.cs, 0);
     assert(0 && "thread should not survive a GP fault");
   }
   assert(!(error & FLAG_PF_RSVD) && "Reserved bit set in page table entry");
@@ -199,7 +199,8 @@ extern "C" void pageFaultHandler(uint64 address, uint64 error)
   PageFaultHandler::enterPageFault(address, error & FLAG_PF_USER,
                                    error & FLAG_PF_PRESENT,
                                    error & FLAG_PF_RDWR,
-                                   error & FLAG_PF_INSTR_FETCH);
+                                   error & FLAG_PF_INSTR_FETCH,
+                                   instruction_pointer);
   if (currentThread->switch_to_userspace_)
     arch_contextSwitch();
   else

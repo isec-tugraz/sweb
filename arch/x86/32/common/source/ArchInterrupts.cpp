@@ -6,6 +6,7 @@
 #include "ArchThreads.h"
 #include "assert.h"
 #include "Thread.h"
+#include "interrupt_registers.h"
 
 void ArchInterrupts::initialise()
 {
@@ -103,26 +104,6 @@ void ArchInterrupts::yieldIfIFSet()
   }
 }
 
-struct context_switch_registers {
-  uint32 es;
-  uint32 ds;
-  uint32 edi;
-  uint32 esi;
-  uint32 ebp;
-  uint32 esp;
-  uint32 ebx;
-  uint32 edx;
-  uint32 ecx;
-  uint32 eax;
-};
-
-struct interrupt_registers {
-  uint32 eip;
-  uint32 cs;
-  uint32 eflags;
-  uint32 esp3;
-  uint32 ss3;
-};
 #include "kprintf.h"
 
 
@@ -139,12 +120,12 @@ extern "C" size_t arch_computeDummyHandler(uint32 eip)
   return calling_dummy_handler;
 }
 
-extern "C" void arch_saveThreadRegisters(uint32 error)
+extern "C" void arch_saveThreadRegisters(size_t* base, size_t error)
 {
   struct context_switch_registers* registers;
-  registers = (struct context_switch_registers*) (&error + 2);
+  registers = (struct context_switch_registers*) base;
   struct interrupt_registers* iregisters;
-  iregisters = (struct interrupt_registers*) (&error + 2 + sizeof(struct context_switch_registers)/sizeof(uint32) + (error));
+  iregisters = (struct interrupt_registers*)((size_t*)(registers + 1) + error);
   ArchThreadRegisters* info = currentThreadRegisters;
 
   asm("fnsave (%[fpu])\n"

@@ -138,13 +138,14 @@ extern "C" void irqHandler_65()
 }
 
 extern "C" void arch_pageFaultHandler();
-extern "C" void pageFaultHandler(uint32 address, uint32 error)
+extern "C" void pageFaultHandler(uint32 address, uint32 error, uint32 instruction_pointer)
 {
   assert(!(error & FLAG_PF_RSVD) && "Reserved bit set in page table entry");
   PageFaultHandler::enterPageFault(address, error & FLAG_PF_USER,
                                    error & FLAG_PF_PRESENT,
                                    error & FLAG_PF_RDWR,
-                                   error & FLAG_PF_INSTR_FETCH);
+                                   error & FLAG_PF_INSTR_FETCH,
+                                   instruction_pointer);
   if (currentThread->switch_to_userspace_)
     arch_contextSwitch();
   else
