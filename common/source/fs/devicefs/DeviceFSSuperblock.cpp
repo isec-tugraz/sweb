@@ -4,7 +4,6 @@
 #include "fs/Dentry.h"
 #include "fs/Inode.h"
 #include "fs/File.h"
-#include "fs/FileDescriptor.h"
 
 #include "console/kprintf.h"
 

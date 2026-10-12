@@ -8,7 +8,6 @@ class Statfs;
 class WaitQueue;
 class FileSystemType;
 class VirtualFileSystem;
-class FileDescriptor;
 
 class Dentry;
 class Inode;
