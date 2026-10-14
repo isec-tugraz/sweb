@@ -15,11 +15,6 @@
 
 VirtualFileSystem vfs;
 
-void VirtualFileSystem::initialize()
-{
-  new (this) VirtualFileSystem();
-}
-
 VirtualFileSystem::VirtualFileSystem()
 {
 }
