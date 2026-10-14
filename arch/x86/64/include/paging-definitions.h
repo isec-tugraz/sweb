@@ -20,60 +20,60 @@
 
 typedef struct
 {
-  uint64 present                   :1;
-  uint64 writeable                 :1;
-  uint64 user_access               :1;
-  uint64 write_through             :1;
-  uint64 cache_disabled            :1;
-  uint64 accessed                  :1;
-  uint64 ignored_3                 :1;
-  uint64 size                      :1; // must be 0
-  uint64 ignored_2                 :4;
-  uint64 page_ppn                  :28;
-  uint64 reserved_1                :12; // must be 0
-  uint64 ignored_1                 :11;
-  uint64 execution_disabled        :1;
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1; // must be 0
+  size_t ignored_2                 :4;
+  size_t page_ppn                  :28;
+  size_t reserved_1                :12; // must be 0
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
 } __attribute__((__packed__)) PageMapLevel4Entry;
 
 static_assert(sizeof(PageMapLevel4Entry) == 8, "PageMapLevel4Entry is not 64 bit");
 
 struct PageDirPointerTablePageDirEntry
 {
-  uint64 present                   :1;
-  uint64 writeable                 :1;
-  uint64 user_access               :1;
-  uint64 write_through             :1;
-  uint64 cache_disabled            :1;
-  uint64 accessed                  :1;
-  uint64 ignored_3                 :1;
-  uint64 size                      :1; // 0 means page directory mapped
-  uint64 ignored_2                 :4;
-  uint64 page_ppn                  :28;
-  uint64 reserved_1                :12; // must be 0
-  uint64 ignored_1                 :11;
-  uint64 execution_disabled        :1;
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1; // 0 means page directory mapped
+  size_t ignored_2                 :4;
+  size_t page_ppn                  :28;
+  size_t reserved_1                :12; // must be 0
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
 } __attribute__((__packed__));
 
 static_assert(sizeof(PageDirPointerTablePageDirEntry) == 8, "PageDirPointerTablePageDirEntry is not 64 bit");
 
 struct PageDirPointerTablePageEntry
 {
-  uint64 present                   :1;
-  uint64 writeable                 :1;
-  uint64 user_access               :1;
-  uint64 write_through             :1;
-  uint64 cache_disabled            :1;
-  uint64 accessed                  :1;
-  uint64 dirty                     :1;
-  uint64 size                      :1; // 1 means 1gb page mapped
-  uint64 global                    :1;
-  uint64 ignored_2                 :3;
-  uint64 pat                       :1;
-  uint64 reserved_2                :17; // must be 0
-  uint64 page_ppn                  :10;
-  uint64 reserved_1                :12; // must be 0
-  uint64 ignored_1                 :11;
-  uint64 execution_disabled        :1;
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t dirty                     :1;
+  size_t size                      :1; // 1 means 1gb page mapped
+  size_t global                    :1;
+  size_t ignored_2                 :3;
+  size_t pat                       :1;
+  size_t reserved_2                :17; // must be 0
+  size_t page_ppn                  :10;
+  size_t reserved_1                :12; // must be 0
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
 } __attribute__((__packed__));
 
 static_assert(sizeof(PageDirPointerTablePageEntry) == 8, "PageDirPointerTablePageEntry is not 64 bit");
@@ -86,41 +86,41 @@ typedef union
 
 struct PageDirPageTableEntry
 {
-  uint64 present                   :1;
-  uint64 writeable                 :1;
-  uint64 user_access               :1;
-  uint64 write_through             :1;
-  uint64 cache_disabled            :1;
-  uint64 accessed                  :1;
-  uint64 ignored_3                 :1;
-  uint64 size                      :1; // 0 means page table mapped
-  uint64 ignored_2                 :4;
-  uint64 page_ppn                  :28;
-  uint64 reserved_1                :12; // must be 0
-  uint64 ignored_1                 :11;
-  uint64 execution_disabled        :1;
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1; // 0 means page table mapped
+  size_t ignored_2                 :4;
+  size_t page_ppn                  :28;
+  size_t reserved_1                :12; // must be 0
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
 } __attribute__((__packed__));
 
 static_assert(sizeof(PageDirPageTableEntry) == 8, "PageDirPageTableEntry is not 64 bit");
 
 struct PageDirPageEntry
 {
-  uint64 present                   :1;
-  uint64 writeable                 :1;
-  uint64 user_access               :1;
-  uint64 write_through             :1;
-  uint64 cache_disabled            :1;
-  uint64 accessed                  :1;
-  uint64 dirty                     :1;
-  uint64 size                      :1;  // 1 means 2mb page mapped
-  uint64 global                    :1;
-  uint64 ignored_2                 :3;
-  uint64 pat                       :1;
-  uint64 reserved_2                :8; // must be 0
-  uint64 page_ppn                  :19;
-  uint64 reserved_1                :12; // must be 0
-  uint64 ignored_1                 :11;
-  uint64 execution_disabled        :1;
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t dirty                     :1;
+  size_t size                      :1;  // 1 means 2mb page mapped
+  size_t global                    :1;
+  size_t ignored_2                 :3;
+  size_t pat                       :1;
+  size_t reserved_2                :8; // must be 0
+  size_t page_ppn                  :19;
+  size_t reserved_1                :12; // must be 0
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
 } __attribute__((__packed__));
 
 static_assert(sizeof(PageDirPageEntry) == 8, "PageDirPageEntry is not 64 bit");
@@ -133,20 +133,20 @@ typedef union
 
 typedef struct
 {
-  uint64 present                   :1;
-  uint64 writeable                 :1;
-  uint64 user_access               :1;
-  uint64 write_through             :1;
-  uint64 cache_disabled            :1;
-  uint64 accessed                  :1;
-  uint64 dirty                     :1;
-  uint64 size                      :1;
-  uint64 global                    :1;
-  uint64 ignored_2                 :3;
-  uint64 page_ppn                  :28;
-  uint64 reserved_1                :12; // must be 0
-  uint64 ignored_1                 :11;
-  uint64 execution_disabled        :1;
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t dirty                     :1;
+  size_t size                      :1;
+  size_t global                    :1;
+  size_t ignored_2                 :3;
+  size_t page_ppn                  :28;
+  size_t reserved_1                :12; // must be 0
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
 } __attribute__((__packed__)) PageTableEntry;
 
 static_assert(sizeof(PageTableEntry) == 8, "PageTableEntry is not 64 bit");
