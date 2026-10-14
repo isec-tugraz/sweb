@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
+#ifndef _WIN32
+#include <sys/file.h>
+#endif
 
 #include "Dentry.h"
 #include "FileSystemInfo.h"
@@ -66,6 +69,15 @@ int main(int argc, char *argv[])
     printf("exe2minixfs: Error opening %s\n", argv[1]);
     return -1;
   }
+
+#ifndef _WIN32
+  if (flock(fileno(image_fd), LOCK_EX) != 0)
+  {
+    printf("exe2minixfs: failed to lock %s\n", argv[1]);
+    fclose(image_fd);
+    return -1;
+  }
+#endif
 
   char* end;
   size_t partition = strtoul(argv[2],&end,10);
