@@ -22,7 +22,7 @@ class ATADriver : public BDDriver
      */
     uint32 addRequest(BDRequest* br);
     void nextRequest(BDRequest* br);
-    ATADriver(uint16 baseport, uint16 getdrive, uint16 irqnum);
+    ATADriver();
     virtual ~ATADriver()
     {
     }
@@ -83,9 +83,6 @@ class ATADriver : public BDDriver
     int32 selectSector(uint32 start_sector, uint32 num_sectors);
 
     uint32 numsec;
-
-    uint16 port;
-    uint16 drive;
 
     uint32 jiffies;
 
