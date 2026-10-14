@@ -14,8 +14,9 @@
 
 #define ROOT_NAME "/"
 
-MinixFSSuperblock::MinixFSSuperblock(MinixFSType* fs_type, size_t s_dev, uint64 offset) :
-    Superblock(fs_type, s_dev), superblock_(this), offset_(offset)
+MinixFSSuperblock::MinixFSSuperblock(MinixFSType* fs_type, size_t s_dev, uint64 offset,
+                                     uint64 partition_size) :
+    Superblock(fs_type, s_dev), superblock_(this), offset_(offset), partition_size_(partition_size)
 {
   //read Superblock data from disc
   readHeader();
