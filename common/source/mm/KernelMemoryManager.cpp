@@ -96,17 +96,16 @@ bool KernelMemoryManager::freeMemory(pointer virtual_address, pointer called_by)
 {
   assert(Thread::currentThreadIsStackCanaryOK() && "Kernel stack corruption detected.");
 
-  if (virtual_address == 0 || virtual_address < ((pointer) first_) || virtual_address >= kernel_break_)
+  if (virtual_address == 0)
     return false;
+
+  assert(virtual_address >= (pointer)first_ && virtual_address < kernel_break_ &&
+         "tried to free an address outside the kernel heap");
 
   lockKMM();
 
   MallocSegment *m_segment = getSegmentFromAddress(virtual_address);
-  if (not m_segment->markerOk())
-  {
-    unlockKMM();
-    return false;
-  }
+  assert(m_segment->markerOk() && "tried to free an invalid kernel heap address");
   freeSegment(m_segment);
   if ((pointer)m_segment < kernel_break_ && m_segment->markerOk())
     m_segment->freed_at_ = called_by;
