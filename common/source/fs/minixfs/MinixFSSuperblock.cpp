@@ -1,8 +1,7 @@
-#include "FileDescriptor.h"
 #include "MinixFSType.h"
 #include "MinixFSSuperblock.h"
 #include "MinixFSInode.h"
-#include "MinixFSFile.h"
+#include "MinixFSFileHandle.h"
 #include "assert.h"
 
 #ifdef EXE2MINIXFS
@@ -264,7 +263,7 @@ void MinixFSSuperblock::deleteInode(Inode* inode)
   dirty_inodes_.remove(inode);
   MinixFSInode *minix_inode = (MinixFSInode *) inode;
   all_inodes_remove_inode(minix_inode);
-  assert(minix_inode->i_files_.empty());
+  assert(minix_inode->i_file_handles_.empty());
   minix_inode->i_zones_->freeZones();
   storage_manager_->freeInode(minix_inode->i_num_);
   uint32 block = 2 + s_num_inode_bm_blocks_ + s_num_zone_bm_blocks_

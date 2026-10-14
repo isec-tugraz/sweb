@@ -1,19 +1,19 @@
-#include "MinixFSFile.h"
+#include "MinixFSFileHandle.h"
 #include "MinixFSInode.h"
 #include "Inode.h"
 
-MinixFSFile::MinixFSFile(Inode* inode, Dentry* dentry, uint32 flag) :
-    File(inode, dentry, flag)
+MinixFSFileHandle::MinixFSFileHandle(Inode* inode, Dentry* dentry, uint32 flag) :
+    KernelFileHandle(inode, dentry, flag)
 {
   f_superblock_ = inode->getSuperblock();
   offset_ = 0;
 }
 
-MinixFSFile::~MinixFSFile()
+MinixFSFileHandle::~MinixFSFileHandle()
 {
 }
 
-int32 MinixFSFile::read(char *buffer, size_t count, l_off_t offset)
+int32 MinixFSFileHandle::read(char *buffer, size_t count, l_off_t offset)
 {
   if (((flag_ & O_RDONLY) || (flag_ & O_RDWR)) && (f_inode_->getMode() & A_READABLE))
   {
@@ -28,7 +28,7 @@ int32 MinixFSFile::read(char *buffer, size_t count, l_off_t offset)
   }
 }
 
-int32 MinixFSFile::write(const char *buffer, size_t count, l_off_t offset)
+int32 MinixFSFileHandle::write(const char *buffer, size_t count, l_off_t offset)
 {
   if (((flag_ & O_WRONLY) || (flag_ & O_RDWR)) && (f_inode_->getMode() & A_WRITABLE))
   {
@@ -43,7 +43,7 @@ int32 MinixFSFile::write(const char *buffer, size_t count, l_off_t offset)
   }
 }
 
-int32 MinixFSFile::flush()
+int32 MinixFSFileHandle::flush()
 {
   ((MinixFSInode *) f_inode_)->flush();
   return 0;
