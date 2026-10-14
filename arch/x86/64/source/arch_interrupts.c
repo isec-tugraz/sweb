@@ -56,6 +56,15 @@ void syscallHandler(void);
   "popq %rax\n"                        \
   "popq %rsp\n"
 
+#define PUSH_BACKTRACE_FRAME(instruction_pointer_offset) \
+  "pushq " #instruction_pointer_offset "(%rsp)\n"     \
+  "pushq %rbp\n"                                      \
+  "movq %rsp, %rbp\n"
+
+#define POP_BACKTRACE_FRAME \
+  "leave\n"              \
+  "addq $8, %rsp\n"
+
 static __attribute__((noinline)) void saveThreadRegisters(void)
 {
   size_t* function_frame = __builtin_frame_address(0);
@@ -77,15 +86,16 @@ static __attribute__((noinline)) void saveThreadRegistersWithErrorCode(void)
   {                                                            \
     asm volatile(PUSH_ALL);                                    \
     saveThreadRegisters();                                     \
+    asm volatile(PUSH_BACKTRACE_FRAME(144));                   \
     irqHandler_##number();                                     \
-    asm volatile(POP_ALL "iretq\n");                          \
+    asm volatile(POP_BACKTRACE_FRAME POP_ALL "iretq\n");     \
   }
 
 #define DEFINE_ERROR_HANDLER(number, error_code)                 \
   static __attribute__((noinline)) void errorEntry_##number(void) \
   {                                                              \
     size_t* function_frame = __builtin_frame_address(0);          \
-    function_frame += 2; /* Skip saved RBP and the return address. */ \
+    function_frame += 4; /* Skip this function's and the synthetic interrupt frame. */ \
     struct context_switch_registers* saved = (struct context_switch_registers*)function_frame; \
     struct interrupt_registers* interrupt =                       \
         (struct interrupt_registers*)((size_t*)(saved + 1) + error_code); \
@@ -99,8 +109,12 @@ static __attribute__((noinline)) void saveThreadRegistersWithErrorCode(void)
       saveThreadRegistersWithErrorCode();                         \
     else                                                          \
       saveThreadRegisters();                                      \
+    if (error_code)                                                \
+      asm volatile(PUSH_BACKTRACE_FRAME(152));                     \
+    else                                                           \
+      asm volatile(PUSH_BACKTRACE_FRAME(144));                     \
     errorEntry_##number();                                       \
-    asm volatile(POP_ALL);                                       \
+    asm volatile(POP_BACKTRACE_FRAME POP_ALL);                   \
     if (error_code)                                               \
       asm volatile("addq $8, %rsp\n"); /* Discard the CPU-pushed error code. */ \
     asm volatile("iretq\n");                                   \
@@ -111,7 +125,7 @@ static size_t dummyhandlerscratchvariable;
 static __attribute__((noinline)) void dummyEntry(void)
 {
   size_t* function_frame = __builtin_frame_address(0);
-  function_frame += 2; // Skip saved RBP and the return address.
+  function_frame += 4; // Skip this function's and the synthetic interrupt frame.
   struct context_switch_registers* saved = (struct context_switch_registers*)function_frame;
   struct interrupt_registers* interrupt = (struct interrupt_registers*)(saved + 1);
   size_t interrupt_number = dummyhandlerscratchvariable + 128;
@@ -128,14 +142,15 @@ __attribute__((naked, aligned(1))) void arch_dummyHandler(void)
                "arch_dummyHandlerMiddle:\n"
                PUSH_ALL);
   saveThreadRegisters();
+  asm volatile(PUSH_BACKTRACE_FRAME(144));
   dummyEntry();
-  asm volatile(POP_ALL "iretq\n");
+  asm volatile(POP_BACKTRACE_FRAME POP_ALL "iretq\n");
 }
 
 static __attribute__((noinline)) void pageFaultEntry(void)
 {
   size_t* function_frame = __builtin_frame_address(0);
-  function_frame += 2; // Skip saved RBP and the return address.
+  function_frame += 4; // Skip this function's and the synthetic interrupt frame.
   struct context_switch_registers* saved = (struct context_switch_registers*)function_frame;
   struct exception_registers* exception = (struct exception_registers*)(saved + 1);
   size_t address;
@@ -147,8 +162,9 @@ __attribute__((naked)) void arch_pageFaultHandler(void)
 {
   asm volatile(PUSH_ALL);
   saveThreadRegistersWithErrorCode();
+  asm volatile(PUSH_BACKTRACE_FRAME(152));
   pageFaultEntry();
-  asm volatile(POP_ALL
+  asm volatile(POP_BACKTRACE_FRAME POP_ALL
                "addq $8, %rsp\n" // Discard the CPU-pushed page-fault error code.
                "iretq\n");
 }
@@ -186,6 +202,7 @@ __attribute__((naked)) void arch_syscallHandler(void)
 {
   asm volatile(PUSH_ALL);
   saveThreadRegisters();
+  asm volatile(PUSH_BACKTRACE_FRAME(144));
   syscallHandler();
   kpanict("syscallHandler returned");
   asm volatile("hlt\n");

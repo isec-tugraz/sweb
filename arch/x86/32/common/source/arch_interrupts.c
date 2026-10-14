@@ -20,6 +20,15 @@ void syscallHandler(void);
   "pop %ds\n"              \
   "popal\n"
 
+#define PUSH_BACKTRACE_FRAME(instruction_pointer_offset) \
+  "pushl " #instruction_pointer_offset "(%esp)\n"     \
+  "pushl %ebp\n"                                      \
+  "movl %esp, %ebp\n"
+
+#define POP_BACKTRACE_FRAME \
+  "leave\n"              \
+  "addl $4, %esp\n"
+
 static __attribute__((noinline)) void saveThreadRegisters(void)
 {
   size_t* function_frame = __builtin_frame_address(0);
@@ -41,15 +50,16 @@ static __attribute__((noinline)) void saveThreadRegistersWithErrorCode(void)
   {                                                            \
     asm volatile(PUSH_ALL);                                    \
     saveThreadRegisters();                                     \
+    asm volatile(PUSH_BACKTRACE_FRAME(40));                    \
     irqHandler_##number();                                     \
-    asm volatile(POP_ALL "iretl\n");                          \
+    asm volatile(POP_BACKTRACE_FRAME POP_ALL "iretl\n");     \
   }
 
 #define DEFINE_ERROR_HANDLER(number, error_code)                 \
   static __attribute__((noinline)) void errorEntry_##number(void) \
   {                                                              \
     size_t* function_frame = __builtin_frame_address(0);          \
-    function_frame += 2; /* Skip saved EBP and the return address. */ \
+    function_frame += 4; /* Skip this function's and the synthetic interrupt frame. */ \
     struct context_switch_registers* saved = (struct context_switch_registers*)function_frame; \
     struct interrupt_registers* interrupt =                       \
         (struct interrupt_registers*)((size_t*)(saved + 1) + error_code); \
@@ -63,8 +73,12 @@ static __attribute__((noinline)) void saveThreadRegistersWithErrorCode(void)
       saveThreadRegistersWithErrorCode();                         \
     else                                                          \
       saveThreadRegisters();                                      \
+    if (error_code)                                                \
+      asm volatile(PUSH_BACKTRACE_FRAME(44));                      \
+    else                                                           \
+      asm volatile(PUSH_BACKTRACE_FRAME(40));                      \
     errorEntry_##number();                                       \
-    asm volatile(POP_ALL);                                       \
+    asm volatile(POP_BACKTRACE_FRAME POP_ALL);                   \
     if (error_code)                                               \
       asm volatile("addl $4, %esp\n"); /* Discard the CPU-pushed error code. */ \
     asm volatile("iretl\n");                                   \
@@ -73,7 +87,7 @@ static __attribute__((noinline)) void saveThreadRegistersWithErrorCode(void)
 static __attribute__((noinline)) void dummyEntry(void)
 {
   size_t* function_frame = __builtin_frame_address(0);
-  function_frame += 2; // Skip saved EBP and the return address.
+  function_frame += 4; // Skip this function's and the synthetic interrupt frame.
   struct context_switch_registers* saved = (struct context_switch_registers*)function_frame;
   struct dummy_interrupt_registers* dummy = (struct dummy_interrupt_registers*)(saved + 1);
   size_t interrupt = arch_computeDummyHandler(dummy->return_address);
@@ -89,8 +103,9 @@ __attribute__((naked, aligned(1))) void arch_dummyHandler(void)
                "arch_dummyHandlerMiddle:\n"
                PUSH_ALL);
   saveThreadRegisters();
+  asm volatile(PUSH_BACKTRACE_FRAME(44));
   dummyEntry();
-  asm volatile(POP_ALL
+  asm volatile(POP_BACKTRACE_FRAME POP_ALL
                "addl $4, %esp\n" // Discard the synthetic return address.
                "iretl\n");
 }
@@ -98,7 +113,7 @@ __attribute__((naked, aligned(1))) void arch_dummyHandler(void)
 static __attribute__((noinline)) void pageFaultEntry(void)
 {
   size_t* function_frame = __builtin_frame_address(0);
-  function_frame += 2; // Skip saved EBP and the return address.
+  function_frame += 4; // Skip this function's and the synthetic interrupt frame.
   struct context_switch_registers* saved = (struct context_switch_registers*)function_frame;
   struct exception_registers* exception = (struct exception_registers*)(saved + 1);
   size_t address;
@@ -110,8 +125,9 @@ __attribute__((naked)) void arch_pageFaultHandler(void)
 {
   asm volatile(PUSH_ALL);
   saveThreadRegistersWithErrorCode();
+  asm volatile(PUSH_BACKTRACE_FRAME(44));
   pageFaultEntry();
-  asm volatile(POP_ALL
+  asm volatile(POP_BACKTRACE_FRAME POP_ALL
                "addl $4, %esp\n" // Discard the CPU-pushed page-fault error code.
                "iretl\n");
 }
@@ -149,6 +165,7 @@ __attribute__((naked)) void arch_syscallHandler(void)
 {
   asm volatile(PUSH_ALL);
   saveThreadRegisters();
+  asm volatile(PUSH_BACKTRACE_FRAME(40));
   syscallHandler();
   kpanict("syscallHandler returned");
   asm volatile("hlt\n");
