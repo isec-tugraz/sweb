@@ -14,8 +14,9 @@
 
 #define ROOT_NAME "/"
 
-MinixFSSuperblock::MinixFSSuperblock(MinixFSType* fs_type, size_t s_dev, uint64 offset) :
-    Superblock(fs_type, s_dev), superblock_(this), offset_(offset)
+MinixFSSuperblock::MinixFSSuperblock(MinixFSType* fs_type, size_t s_dev, uint64 offset,
+                                     uint64 partition_size) :
+    Superblock(fs_type, s_dev), superblock_(this), offset_(offset), partition_size_(partition_size)
 {
   //read Superblock data from disc
   readHeader();
@@ -281,6 +282,7 @@ uint16 MinixFSSuperblock::allocateZone()
   debug(M_ZONE, "MinixFSSuperblock allocateZone>\n");
   uint16 ret = (storage_manager_->allocZone() + s_1st_datazone_ - 1); // -1 because the zone nr 0 is set in the bitmap and should never be used!
   debug(M_ZONE, "MinixFSSuperblock allocateZone> returning %d\n", ret);
+  assert(ret < s_zones_);
   return ret;
 }
 
@@ -294,7 +296,13 @@ void MinixFSSuperblock::readBlocks(uint16 block, uint32 num_blocks, char* buffer
 {
   assert(buffer);
 #ifdef EXE2MINIXFS
-  size_t read_size = BLOCK_SIZE * num_blocks;
+  size_t relative_offset;
+  size_t read_size;
+  size_t read_end;
+  assert(!__builtin_mul_overflow((size_t)block, (size_t)BLOCK_SIZE, &relative_offset));
+  assert(!__builtin_mul_overflow((size_t)num_blocks, (size_t)BLOCK_SIZE, &read_size));
+  assert(!__builtin_add_overflow(relative_offset, read_size, &read_end));
+  assert(read_end <= partition_size_ && "Read exceeds the selected partition");
   fseek((FILE*)s_dev_, offset_ + block * BLOCK_SIZE, SEEK_SET);
   assert(fread(buffer, 1, read_size, (FILE*)s_dev_) == read_size);
 #else
@@ -308,13 +316,20 @@ void MinixFSSuperblock::readBlocks(uint16 block, uint32 num_blocks, char* buffer
 
 void MinixFSSuperblock::writeZone(uint16 zone, char* buffer)
 {
+  assert(zone < s_zones_);
   writeBlocks(zone, ZONE_SIZE / BLOCK_SIZE, buffer);
 }
 
 void MinixFSSuperblock::writeBlocks(uint16 block, uint32 num_blocks, char* buffer)
 {
 #ifdef EXE2MINIXFS
-  size_t write_size = BLOCK_SIZE * num_blocks;
+  size_t relative_offset;
+  size_t write_size;
+  size_t write_end;
+  assert(!__builtin_mul_overflow((size_t)block, (size_t)BLOCK_SIZE, &relative_offset));
+  assert(!__builtin_mul_overflow((size_t)num_blocks, (size_t)BLOCK_SIZE, &write_size));
+  assert(!__builtin_add_overflow(relative_offset, write_size, &write_end));
+  assert(write_end <= partition_size_ && "Write exceeds the selected partition");
   fseek((FILE*)s_dev_, offset_ + block * BLOCK_SIZE, SEEK_SET);
   assert(fwrite(buffer, 1, write_size, (FILE*)s_dev_) == write_size);
 #else

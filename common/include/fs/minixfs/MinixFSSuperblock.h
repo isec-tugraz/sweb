@@ -16,7 +16,8 @@ class MinixFSSuperblock : public Superblock
     friend class MinixFSZone;
     friend class MinixStorageManager;
 
-    MinixFSSuperblock(MinixFSType* fs_type, size_t s_dev, uint64 offset);
+    MinixFSSuperblock(MinixFSType* fs_type, size_t s_dev, uint64 offset,
+                      uint64 partition_size = 0);
     virtual ~MinixFSSuperblock();
 
     /**
@@ -197,5 +198,7 @@ class MinixFSSuperblock : public Superblock
      * offset in the image file (in image util)
      */
     uint64 offset_;
+
+    uint64 partition_size_;
 };
 
