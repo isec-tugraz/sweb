@@ -4,13 +4,14 @@
 #include "multiboot.h"
 #include "ArchCommon.h"
 #include "ArchMemory.h"
+#include "assert.h"
 #include "kprintf.h"
 
 extern void* kernel_end_address;
 
 extern PageDirPointerTableEntry kernel_page_directory_pointer_table[];
 extern PageDirEntry kernel_page_directory[];
-extern PageTableEntry kernel_page_table[];
+extern PageTableEntry kernel_page_table[8 * PAGE_TABLE_ENTRIES];
 extern PageMapLevel4Entry kernel_page_map_level_4[];
 
 extern "C" void initialisePaging()
@@ -74,6 +75,11 @@ extern "C" void initialisePaging()
 
   extern size_t ro_data_end_address;
   size_t last_ro_data_page = (size_t)VIRTUAL_TO_PHYSICAL_BOOT((pointer)&ro_data_end_address) / PAGE_SIZE;
+
+  assert(kernel_last_page <= sizeof(kernel_page_table) / sizeof(kernel_page_table[0]) &&
+         "kernel exceeds the boot page tables");
+  assert(last_ro_data_page >= 256 && last_ro_data_page <= kernel_last_page &&
+         "invalid read-only kernel section boundaries");
 
   // Map the kernel page tables (first 640kib = 184 pages are unused)
   for (i = 184; i < last_ro_data_page - 256; ++i)
