@@ -136,7 +136,10 @@ set(ENV{LIBRARY_NAMES})
 
 #Create target for userspace libc (Need to to that here because some files (e.g. syscall.c) are all over the place)
 add_library(userspace_libc "")
-target_compile_options(userspace_libc PUBLIC ${ARCH_USERSPACE_COMPILE_OPTIONS})
+target_compile_options(userspace_libc PUBLIC
+    ${ARCH_USERSPACE_COMPILE_OPTIONS}
+    $<$<COMPILE_LANGUAGE:C>:-std=gnu11;-Werror=implicit-function-declaration>
+    $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++17;-nostdinc++;-fno-exceptions;-fno-rtti;-fno-use-cxa-atexit>)
 
 #Add the source directories
 add_subdirectory(arch)
