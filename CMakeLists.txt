@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.12)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
@@ -99,7 +99,7 @@ endif()
 function(ADD_PROJECT_LIBRARY LIBRARY_NAME)
   arch2obj(archobj_libname ${LIBRARY_NAME})
 
-  file(GLOB source_files ${SOURCE_WILDCARDS})
+  file(GLOB source_files CONFIGURE_DEPENDS ${SOURCE_WILDCARDS})
 
   set(library_files)
 
@@ -172,7 +172,7 @@ foreach(file $ENV{USERSPACE_NAMES_EXE2MINIX})
   list(APPEND MINIXFS_ARGUMENT ${file})
 endforeach(file)
 
-file(GLOB userspace_data userspace/data/*)
+file(GLOB userspace_data CONFIGURE_DEPENDS userspace/data/*)
 foreach(file ${userspace_data})
   get_filename_component(datafile ${file} NAME)
   list(APPEND MINIXFS_ARGUMENT ${file} ${datafile})
@@ -182,6 +182,7 @@ endforeach(file)
 #Creates the hd image and copies all files to it
 add_custom_target (hdd_image ALL
   DEPENDS kernel_to_image userspace_to_image
+  BYPRODUCTS ${HDD_IMAGE}
   COMMAND qemu-img convert -f raw -O qcow2 ${HDD_IMAGE_RAW} ${HDD_IMAGE}
 )
 
@@ -205,6 +206,7 @@ if("${ARCH}" MATCHES "arm")
 #The debug info gets extracted and linked in at the second link step
 add_custom_target (kernel_image
     DEPENDS ${FINAL_LIB_NAMES} add-dbg
+    BYPRODUCTS ${PROJECT_BINARY_DIR}/kernel.dbg
     COMMAND ${LD_EXECUTABLE} ${KERNEL_LD_ARGUMENT} ${KERNEL_IMAGE_OBJCOPY}
     COMMAND ${LD_EXECUTABLE} ${KERNEL_LD_ARGUMENT} ${ADD_LD_ARGUMENT}
     WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH}
@@ -214,6 +216,7 @@ else()
 
 add_custom_target (kernel_image
     DEPENDS ${FINAL_LIB_NAMES} add-dbg
+    BYPRODUCTS ${PROJECT_BINARY_DIR}/kernel.dbg
     COMMAND ${LD_EXECUTABLE} ${KERNEL_LD_ARGUMENT} ${KERNEL_IMAGE_OBJCOPY}
     WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH}
 )
@@ -293,6 +296,14 @@ add_custom_target(mrproper
     COMMAND ${PROJECT_SOURCE_DIR}/utils/prompt.sh "rm -fR ${PROJECT_BINARY_DIR}/*: remove all arguments recursively [Y/n]? "
     COMMAND rm -fR ${PROJECT_BINARY_DIR}/* || true
     COMMAND cmake -DARCH=${ARCH} ${PROJECT_SOURCE_DIR} ${CMAKE_CROSS_COMPILE_FLAGS}
+)
+
+#Custom target: make cleandisk
+#Deletes the disk image so it is freshly recreated on next build
+add_custom_target(cleandisk
+    COMMENT "Removing disk image"
+    COMMAND ${CMAKE_COMMAND} -E rm -f -- ${PROJECT_BINARY_DIR}/${HDD_IMAGE_RAW}
+    COMMAND ${CMAKE_COMMAND} -E rm -f -- ${PROJECT_BINARY_DIR}/${HDD_IMAGE}
 )
 
 #Custom target: make debug

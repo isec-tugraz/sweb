@@ -14,7 +14,7 @@ set(USERSPACE_TESTS_LINKER_OPTIONS -Wl,-Ttext=0x8000000 -Wl,--build-id=none -Wl,
 set(FINAL_USERSPACE_TESTS_COMPILE_OPTIONS ${ARCH_USERSPACE_COMPILE_OPTIONS} ${USERSPACE_TESTS_COMPILE_OPTIONS})
 set(FINAL_USERSPACE_TESTS_LINKER_OPTIONS ${ARCH_LD_ARGUMENTS} ${ARCH_USERSPACE_LINKER_OPTIONS} ${USERSPACE_TESTS_LINKER_OPTIONS})
 
-file(GLOB userspace_tests_SOURCES ${SOURCE_WILDCARDS})
+file(GLOB userspace_tests_SOURCES CONFIGURE_DEPENDS ${SOURCE_WILDCARDS})
 
 # Create own executable for every .c file and link with libc
 foreach(curFile ${userspace_tests_SOURCES})
@@ -30,10 +30,10 @@ foreach(curFile ${userspace_tests_SOURCES})
   set(ENV{USERSPACE_NAMES_EXE2MINIX} "$ENV{USERSPACE_NAMES_EXE2MINIX};${EXECUTABLE_OUTPUT_PATH}/${curName}.sweb;${curName}.sweb")
 endforeach(curFile)
 
-file(GLOB userspace_tests_PROJECTS */)
+file(GLOB userspace_tests_PROJECTS CONFIGURE_DEPENDS */)
 
 foreach(curProject ${userspace_tests_PROJECTS})
-file(GLOB curProject_SOURCES ${curProject}/*.c)
+  file(GLOB curProject_SOURCES CONFIGURE_DEPENDS ${curProject}/*.c)
 
   if(curProject_SOURCES)
     get_filename_component(exename ${curProject} NAME)
