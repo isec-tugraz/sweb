@@ -15,6 +15,11 @@ Mutex::Mutex(const char* name) :
 {
 }
 
+bool Mutex::isHeldByCurrentThread() const
+{
+  return system_state != RUNNING || held_by_ == currentThread;
+}
+
 bool Mutex::acquireNonBlocking(pointer called_by)
 {
   if(unlikely(system_state != RUNNING))
