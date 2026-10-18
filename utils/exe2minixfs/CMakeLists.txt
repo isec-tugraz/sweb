@@ -4,16 +4,16 @@ file(GLOB util_exe2minixfs_SOURCES *.cpp
                                    ../../common/source/util/Bitmap.cpp
                                    ../../common/source/fs/Inode.cpp
                                    ../../common/source/fs/Dentry.cpp
-                                   ../../common/source/fs/FileDescriptor.cpp
+                                   ../../common/source/fs/FileDescriptorTable.cpp
                                    ../../common/source/fs/FileSystemInfo.cpp
                                    ../../common/source/fs/FileSystemType.cpp
                                    ../../common/source/fs/Superblock.cpp
-                                   ../../common/source/fs/File.cpp
+                                   ../../common/source/fs/KernelFileHandle.cpp
                                    ../../common/source/fs/PathWalker.cpp
                                    ../../common/source/fs/Path.cpp
                                    ../../common/source/fs/VfsMount.cpp
                                    ../../common/source/fs/VfsSyscall.cpp
-                                   ../../common/source/fs/minixfs/MinixFSFile.cpp
+                                   ../../common/source/fs/minixfs/MinixFSFileHandle.cpp
                                    ../../common/source/fs/minixfs/MinixFSInode.cpp
                                    ../../common/source/fs/minixfs/MinixFSSuperblock.cpp
                                    ../../common/source/fs/minixfs/MinixFSZone.cpp

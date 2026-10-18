@@ -8,11 +8,10 @@ class Statfs;
 class WaitQueue;
 class FileSystemType;
 class VirtualFileSystem;
-class FileDescriptor;
 
 class Dentry;
 class Inode;
-class File;
+class KernelFileHandle;
 
 class Superblock
 {
@@ -77,7 +76,7 @@ class Superblock
      * file-system. It is used, for example, to check if there are any files
      * open for write before remounting the file-system as read-only.
      */
-    ustl::list<File*> s_files_;
+    ustl::list<KernelFileHandle*> s_file_handles_;
 
 
   public:
@@ -129,8 +128,8 @@ class Superblock
     virtual void deleteInode(Inode* /*inode*/);
 
 
-    virtual int fileOpened(File* file);
-    virtual int fileReleased(File* file);
+    virtual int fileHandleOpened(KernelFileHandle* file_handle);
+    virtual int fileHandleReleased(KernelFileHandle* file_handle);
 
     virtual void releaseAllOpenFiles();
     virtual void deleteAllInodes();
