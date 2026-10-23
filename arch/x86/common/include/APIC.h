@@ -1,8 +1,9 @@
 #pragma once
 
 #include "types.h"
+#include "cpu_local.h"
 
-extern volatile size_t outstanding_EOIs;
+extern __cpu volatile size_t outstanding_EOIs;
 
 namespace APIC
 {

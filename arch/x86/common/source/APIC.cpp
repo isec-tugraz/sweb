@@ -7,7 +7,7 @@
 #include "offsets.h"
 #include "ports.h"
 
-volatile size_t outstanding_EOIs;
+__cpu volatile size_t outstanding_EOIs;
 
 static PageTableEntry apic_page_table[PAGE_TABLE_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
 static volatile uint32* local_apic;

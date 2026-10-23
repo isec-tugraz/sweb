@@ -82,8 +82,8 @@ struct GateDesc
 extern "C" void arch_dummyHandler();
 extern "C" void arch_dummyHandlerMiddle();
 
-uint64 InterruptUtils::pf_address;
-uint64 InterruptUtils::pf_address_counter;
+__cpu uint64 InterruptUtils::pf_address = 0xdeadbeef;
+__cpu uint64 InterruptUtils::pf_address_counter;
 
 void InterruptUtils::initialise()
 {
