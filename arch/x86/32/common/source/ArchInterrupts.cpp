@@ -50,10 +50,7 @@ void ArchInterrupts::EndOfInterrupt(uint16 /*number*/)
 
 void ArchInterrupts::enableInterrupts()
 {
-     __asm__ __volatile__("sti"
-   :
-   :
-   );
+  asm volatile("sti" ::: "memory");
 }
 
 bool ArchInterrupts::disableInterrupts()
@@ -64,7 +61,7 @@ bool ArchInterrupts::disableInterrupts()
                       "popl %0\n"
                       "cli"
  : "=a"(ret_val)
- :);
+ : : "memory");
 
 return (ret_val & (1 << 9));  //testing IF Flag
 

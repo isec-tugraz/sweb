@@ -49,16 +49,16 @@ void ArchInterrupts::EndOfInterrupt(uint16 /*number*/)
 
 void ArchInterrupts::enableInterrupts()
 {
-   asm("sti");
+   asm volatile("sti" ::: "memory");
 }
 
 bool ArchInterrupts::disableInterrupts()
 {
   uint64 ret_val;
-  asm("pushfq\n"
+  asm volatile("pushfq\n"
       "popq %0\n"
       "cli"
-      : "=a"(ret_val));
+      : "=a"(ret_val) :: "memory");
   return (ret_val & (1 << 9));  //testing IF Flag
 }
 
@@ -66,7 +66,7 @@ bool ArchInterrupts::testIFSet()
 {
   uint64 ret_val;
 
-  asm("pushfq\n"
+  asm volatile("pushfq\n"
       "popq %0\n"
       : "=a"(ret_val));
   return (ret_val & (1 << 9));  //testing IF Flag
