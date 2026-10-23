@@ -80,15 +80,6 @@ void SpinLock::acquire(pointer called_by)
   recordAcquisition(called_by);
 }
 
-bool SpinLock::isFree()
-{
-  if(unlikely(ArchInterrupts::testIFSet() && Scheduler::instance()->isSchedulingEnabled()))
-  {
-    debug(LOCK, "SpinLock::isFree: ERROR: Should not be used with IF=1 AND enabled Scheduler, use acquire instead\n");
-    assert(false);
-  }
-  return (lock_ == 0);
-}
 
 void SpinLock::release(pointer called_by)
 {
@@ -107,3 +98,4 @@ void SpinLock::release(pointer called_by)
   recordRelease(called_by);
   ArchThreads::atomic_set(lock_, 0);
 }
+

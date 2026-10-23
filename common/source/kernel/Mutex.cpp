@@ -106,13 +106,3 @@ void Mutex::release(pointer called_by)
     Scheduler::instance()->wake(thread_to_be_woken_up);
   }
 }
-
-bool Mutex::isFree()
-{
-  if(unlikely(ArchInterrupts::testIFSet() && Scheduler::instance()->isSchedulingEnabled()))
-  {
-    debug(LOCK, "Mutex::isFree: ERROR: Should not be used with IF=1 AND enabled Scheduler, use acquire instead\n");
-    assert(false);
-  }
-  return (mutex_ == 0);
-}
