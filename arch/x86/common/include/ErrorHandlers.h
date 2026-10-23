@@ -47,13 +47,21 @@ ERROR_HANDLER(17)
 ERROR_HANDLER(18)
 ERROR_HANDLER(19)
 
-extern ArchThreadRegisters *currentThreadRegisters;
-extern Thread *currentThread;
+extern __cpu ArchThreadRegisters *currentThreadRegisters;
+extern __cpu Thread *currentThread;
 
 #define ERRORHANDLER(X) {X, &arch_errorHandler_##X},
 #define IRQHANDLER(X) {X + 32, &arch_irqHandler_##X},
+#ifdef CMAKE_X86_64
+struct InterruptFrame;
+extern "C" __attribute__((interrupt)) void arch_stopHandler(InterruptFrame*);
+extern "C" __attribute__((interrupt)) void arch_tlbHandler(InterruptFrame*);
+#endif
 InterruptHandlers InterruptUtils::handlers[] = {
   ERRORHANDLER(0)
+#ifdef CMAKE_X86_64
+  {2, reinterpret_cast<void(*)()>(arch_stopHandler)},
+#endif
   ERRORHANDLER(4)
   ERRORHANDLER(5)
   ERRORHANDLER(6)
@@ -79,6 +87,10 @@ InterruptHandlers InterruptUtils::handlers[] = {
   IRQHANDLER(14)
   IRQHANDLER(15)
   {65, &arch_irqHandler_65},
+#ifdef CMAKE_X86_64
+  {66, reinterpret_cast<void(*)()>(arch_tlbHandler)},
+#endif
+  {127, &arch_irqHandler_127},
   {128, &arch_syscallHandler},
   {0,0}
 };

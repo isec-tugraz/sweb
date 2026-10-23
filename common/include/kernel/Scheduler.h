@@ -4,6 +4,7 @@
 #include <ulist.h>
 #include "IdleThread.h"
 #include "CleanupThread.h"
+#include "Mutex.h"
 
 class Thread;
 class Mutex;
@@ -16,7 +17,8 @@ class Scheduler
     static Scheduler *instance();
 
     void addNewThread(Thread *thread);
-    void sleep();
+    // If supplied, release the waiters list lock after marking the current thread sleeping.
+    void sleep(Lock* waiters_lock = nullptr);
     void wake(Thread *thread_to_wake);
     void yield();
     void printThreadList();
@@ -40,6 +42,7 @@ class Scheduler
     friend class CleanupThread;
 
     void cleanupDeadThreads();
+    void receiveThreads();
 
   private:
     Scheduler();
@@ -57,10 +60,12 @@ class Scheduler
      */
     void unlockScheduling();
 
-    static Scheduler *instance_;
+    static __cpu Scheduler scheduler_;
 
     typedef ustl::list<Thread*> ThreadList;
     ThreadList threads_;
+    ThreadList incoming_threads_;
+    Mutex incoming_lock_;
 
     size_t block_scheduling_;
 

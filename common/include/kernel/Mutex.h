@@ -29,16 +29,6 @@ public:
   void acquire(pointer called_by = 0);
   void release(pointer called_by = 0);
 
-  /**
-   * allows us to check if the Lock is set or not.
-   * this should be used only if you really really know what you are doing and
-   * mutual exclusion is assured in some other way. Of course, if mutual exclusion
-   * is assured in another way, why do you need to check a Lock in the first place ?
-   * so there really is no good reason to use isFree() :-)
-   *
-   * @return true if lock is set, false otherwise
-   */
-  bool isFree();
 
 private:
 

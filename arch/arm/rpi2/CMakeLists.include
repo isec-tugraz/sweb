@@ -39,16 +39,16 @@ add_custom_target(sdcardq
 
 # qemu: Run qemu in non debugging mode
 add_custom_target(qemu
-    COMMAND qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp
-    COMMENT "Executing `qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp`"
+    COMMAND qemu-system-arm -smp ${QEMU_CPUS} -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp
+    COMMENT "Executing `qemu-system-arm -smp ${QEMU_CPUS} -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp`"
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMAND reset -I
     )
 
 # qemugdb: Run qemu in non debugging mode
 add_custom_target(qemugdb
-    COMMAND qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S
-    COMMENT "Executing `qemu-system-arm -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S`"
+    COMMAND qemu-system-arm -smp ${QEMU_CPUS} -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S
+    COMMENT "Executing `qemu-system-arm -smp ${QEMU_CPUS} -kernel kernel.x -cpu cortex-a7 -m 1024 -M raspi2b -no-reboot -drive if=sd,file=${HDD_IMAGE} -serial stdio -d guest_errors,unimp -s -S`"
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMAND reset -I
     )

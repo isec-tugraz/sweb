@@ -31,7 +31,7 @@ extern "C" void threadStartHack()
 
 Thread::Thread(FileSystemInfo *working_dir, ustl::string name, Thread::TYPE type) :
     kernel_registers_(0), user_registers_(0), switch_to_userspace_(type == Thread::USER_THREAD ? 1 : 0), loader_(0),
-    next_thread_in_lock_waiters_list_(0), lock_waiting_on_(0), holding_lock_list_(0), state_(Running), tid_(0),
+    next_thread_in_lock_waiters_list_(0), lock_waiting_on_(0), holding_lock_list_(0), state_(Running), scheduler_(nullptr), tid_(0),
     my_terminal_(0), working_dir_(working_dir), name_(ustl::move(name))
 {
   debug(THREAD, "Thread ctor, this is %p, stack is %p, fs_info ptr: %p\n", this, kernel_stack_, working_dir_);
@@ -42,6 +42,9 @@ Thread::Thread(FileSystemInfo *working_dir, ustl::string name, Thread::TYPE type
 
 Thread::~Thread()
 {
+  assert(this != currentThread);
+  assert(!scheduler_ || (scheduler_ == Scheduler::instance() && scheduler_->isCurrentlyCleaningUp()));
+  assert(!lock_waiting_on_ && "Thread is still on a lock's waiters list");
   debug(THREAD, "~Thread: freeing ThreadInfos\n");
   delete user_registers_;
   user_registers_ = 0;
@@ -60,6 +63,7 @@ Thread::~Thread()
 // DO NOT use new / delete in this Method, as it is sometimes called from an Interrupt Handler with Interrupts disabled
 void Thread::kill()
 {
+  assert(!holding_lock_list_ && !lock_waiting_on_ && "Thread must release its locks before exiting");
   debug(THREAD, "kill: Called by <%s (%p)>. Preparing Thread <%s (%p)> for destruction\n", currentThread->getName(),
         currentThread, getName(), this);
 
@@ -82,7 +86,7 @@ void* Thread::getKernelStackStartPointer()
 
 bool Thread::currentThreadIsStackCanaryOK()
 {
-  return !currentThread || currentThread->isStackCanaryOK();
+  return system_state == BOOTING || !currentThread || currentThread->isStackCanaryOK();
 }
 bool Thread::isStackCanaryOK()
 {
@@ -181,13 +185,14 @@ size_t Thread::getTID()
 
 ThreadState Thread::getState() const
 {
-  return state_;
+  return __atomic_load_n(&state_, __ATOMIC_ACQUIRE);
 }
 
 void Thread::setState(ThreadState new_state)
 {
-  assert(!((state_ == ToBeDestroyed) && (new_state != ToBeDestroyed)) && "Tried to change thread state when thread was already set to be destroyed");
+  assert(new_state != ToBeDestroyed || !scheduler_ || currentThread == this);
+  assert(!((getState() == ToBeDestroyed) && (new_state != ToBeDestroyed)) && "Tried to change thread state when thread was already set to be destroyed");
   assert(!((new_state == Sleeping) && (currentThread != this)) && "Setting other threads to sleep is not thread-safe");
 
-  state_ = new_state;
+  __atomic_store_n(&state_, new_state, __ATOMIC_RELEASE);
 }

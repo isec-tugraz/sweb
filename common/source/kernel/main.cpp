@@ -20,11 +20,13 @@
 #include "RamFSType.h"
 #include "MinixFSType.h"
 #include "VirtualFileSystem.h"
-#include "FileDescriptor.h"
 #include "TextConsole.h"
 #include "Terminal.h"
-#include "outerrstream.h"
 #include "user_progs.h"
+#ifdef CMAKE_X86_64
+#include "ArchMulticore.h"
+#endif
+#include "GlobalConstructors.h"
 
 extern void* kernel_end_address;
 
@@ -43,6 +45,9 @@ extern "C" void startup()
 
   PageManager::instance();
   writeLine2Bochs("PageManager and KernelMemoryManager created \n");
+
+  callGlobalConstructors();
+  writeLine2Bochs("Global constructors called \n");
 
   main_console = ArchCommon::createConsole(1);
   writeLine2Bochs("Console created \n");
@@ -65,21 +70,20 @@ extern "C" void startup()
   ArchThreads::initialise();
   debug(MAIN, "Interrupts init\n");
   ArchInterrupts::initialise();
+#ifdef CMAKE_X86_64
+  ArchMulticore::initialise();
+#endif
 
   ArchInterrupts::setTimerFrequency(IRQ0_TIMER_FREQUENCY);
 
   ArchCommon::initDebug();
 
-  vfs.initialize();
   debug(MAIN, "Mounting root file system\n");
   vfs.registerFileSystem(DeviceFSType::getInstance());
   vfs.registerFileSystem(new RamFSType());
   vfs.registerFileSystem(new MinixFSType());
   default_working_dir = vfs.rootMount("ramfs", 0);
   assert(default_working_dir);
-
-  // Important: Initialise global and static objects
-  new (&global_fd_list) FileDescriptorList();
 
   debug(MAIN, "Block Device creation\n");
   BDManager::getInstance()->doDeviceDetection();
@@ -95,7 +99,6 @@ extern "C" void startup()
   main_console->setWorkingDirInfo(new FileSystemInfo(*default_working_dir));
   debug(MAIN, "main_console->setWorkingDirInfo done\n");
 
-  ustl::coutclass::init();
   debug(MAIN, "default_working_dir root name: %s\t pwd name: %s\n",
         default_working_dir->getRoot().dentry_->getName(),
         default_working_dir->getPwd().dentry_->getName());
@@ -115,9 +118,12 @@ extern "C" void startup()
   Scheduler::instance()->addNewThread(main_console);
   Scheduler::instance()->addNewThread(new ProcessRegistry(new FileSystemInfo(*default_working_dir), user_progs /*see user_progs.h*/));
   Scheduler::instance()->printThreadList();
+#ifdef CMAKE_X86_64
+  ArchMulticore::startOtherCPUs();
+#endif
 
   kprintf("Now enabling Interrupts...\n");
-  system_state = RUNNING;
+  __atomic_store_n(&system_state, RUNNING, __ATOMIC_RELEASE);
 
   ArchInterrupts::enableInterrupts();
 

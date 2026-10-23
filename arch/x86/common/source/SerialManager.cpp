@@ -4,7 +4,7 @@
 
 #include "debug_bochs.h"
 #include "kprintf.h"
-#include "8259.h"
+#include "APIC.h"
 
 SerialManager * SerialManager::instance_ = 0;
 
@@ -42,7 +42,7 @@ uint32 SerialManager::do_detection( uint32 is_paging_set_up )
       // UART type detection still missing
       archInfo->irq_num = 4 - i%2;
       serial_ports[ num_ports ] = new SerialPort( (char*) sp_name, *archInfo );
-      enableIRQ( archInfo->irq_num );
+      APIC::enableIRQ( archInfo->irq_num );
       num_ports++;
     }
   }

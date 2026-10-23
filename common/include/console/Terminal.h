@@ -98,11 +98,6 @@ class Terminal : public CharacterDevice
 
     void backspace();
 
-    bool isLockFree()
-    {
-      return mutex_.isFree();
-    }
-
   protected:
 
     void setAsActiveTerminal();

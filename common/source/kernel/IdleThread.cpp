@@ -12,6 +12,7 @@ void IdleThread::Run()
   uint32 new_ticks = 0;
   while (1)
   {
+    Scheduler::instance()->receiveThreads();
     new_ticks = Scheduler::instance()->getTicks();
     if (new_ticks == last_ticks)
     {

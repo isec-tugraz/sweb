@@ -1,71 +1,64 @@
 #include "ArchInterrupts.h"
-#include "8259.h"
+#include "APIC.h"
 #include "ports.h"
 #include "InterruptUtils.h"
 #include "ArchThreads.h"
 #include "assert.h"
 #include "Thread.h"
+#include "ArchMulticore.h"
 
 void ArchInterrupts::initialise()
 {
-  uint16 i;
   disableInterrupts();
-  initialise8259s();
   InterruptUtils::initialise();
-  for (i=0;i<16;++i)
-    disableIRQ(i);
+  outportb(0x21, 0xFF); // Mask the legacy PIC; all interrupts use APIC delivery.
+  outportb(0xA1, 0xFF);
+  APIC::initialise();
 }
 
 void ArchInterrupts::enableTimer()
 {
-  enableIRQ(0);
+  APIC::enableTimer();
 }
 
-void ArchInterrupts::setTimerFrequency(uint32 freq) {
-  uint16_t divisor;
-  if(freq < (uint32)(1193180. / (1 << 16) + 1)) {
-    divisor = 0;
-  } else {
-    divisor = (uint16)(1193180 / freq);
-  }
-  outportb(0x43, 0x36);
-  outportb(0x40, divisor & 0xFF);
-  outportb(0x40, divisor >> 8);
+void ArchInterrupts::setTimerFrequency(uint32 freq)
+{
+  assert(freq == 0 && "APIC timer uses a fixed count, not a calibrated frequency");
 }
 
 void ArchInterrupts::disableTimer()
 {
-  disableIRQ(0);
+  APIC::disableTimer();
 }
 
 void ArchInterrupts::enableKBD()
 {
-  enableIRQ(1);
-  enableIRQ(9);
+  APIC::enableIRQ(1);
+  APIC::enableIRQ(9);
 }
 
 void ArchInterrupts::disableKBD()
 {
-  disableIRQ(1);
+  APIC::disableIRQ(1);
 }
 
-void ArchInterrupts::EndOfInterrupt(uint16 number) 
+void ArchInterrupts::EndOfInterrupt(uint16 /*number*/)
 {
-  sendEOI(number);
+  APIC::sendEOI();
 }
 
 void ArchInterrupts::enableInterrupts()
 {
-   asm("sti");
+   asm volatile("sti" ::: "memory");
 }
 
 bool ArchInterrupts::disableInterrupts()
 {
   uint64 ret_val;
-  asm("pushfq\n"
+  asm volatile("pushfq\n"
       "popq %0\n"
       "cli"
-      : "=a"(ret_val));
+      : "=a"(ret_val) :: "memory");
   return (ret_val & (1 << 9));  //testing IF Flag
 }
 
@@ -73,7 +66,7 @@ bool ArchInterrupts::testIFSet()
 {
   uint64 ret_val;
 
-  asm("pushfq\n"
+  asm volatile("pushfq\n"
       "popq %0\n"
       : "=a"(ret_val));
   return (ret_val & (1 << 9));  //testing IF Flag
@@ -158,13 +151,6 @@ extern "C" void arch_saveThreadRegisters(uint64* base, uint64 error)
   assert(!currentThread || currentThread->isStackCanaryOK());
 }
 
-typedef struct {
-    uint32 padding;
-    uint64 rsp0; // actually the TSS has more fields, but we don't need them
-} __attribute__((__packed__))TSS;
-
-extern TSS g_tss;
-
 extern "C" void arch_contextSwitch()
 {
   if(outstanding_EOIs)
@@ -179,7 +165,7 @@ extern "C" void arch_contextSwitch()
   }
   assert(currentThread->isStackCanaryOK() && "Kernel stack corruption detected.");
   ArchThreadRegisters info = *currentThreadRegisters; // optimization: local copy produces more efficient code in this case
-  g_tss.rsp0 = info.rsp0;
+  currentCPU->tss.rsp0 = info.rsp0;
   if (currentThread->switch_to_userspace_)
   {
     asm volatile("fxrstor (%0)" :: "r"(info.fpu));

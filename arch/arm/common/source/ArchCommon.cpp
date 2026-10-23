@@ -111,9 +111,9 @@ void ArchCommon::idle()
 }
 
 
-extern "C" void __aeabi_atexit()
+extern "C" int __aeabi_atexit(void*, void (*)(void*), void*)
 {
-  assert(false && "would not make sense in a kernel");
+  return 0; // Kernel globals live until shutdown; their destructors are never called.
 }
 
 extern "C" void __aeabi_unwind_cpp_pr0()

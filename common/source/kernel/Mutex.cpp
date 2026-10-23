@@ -40,10 +40,7 @@ bool Mutex::acquireNonBlocking(pointer called_by)
     // so we are not allowed to lock it.
     return false;
   }
-  assert(held_by_ == 0);
-  last_accessed_at_ = called_by;
-  held_by_ = currentThread;
-  pushFrontToCurrentThreadHoldingList();
+  recordAcquisition(called_by);
   return true;
 }
 
@@ -76,14 +73,9 @@ void Mutex::acquire(pointer called_by)
     // check for deadlocks, interrupts...
     doChecksBeforeWaiting();
     sleepAndRelease();
-    // We have been waken up again.
-    currentThread->lock_waiting_on_ = 0;
   }
 
-  assert(held_by_ == 0);
-  pushFrontToCurrentThreadHoldingList();
-  last_accessed_at_ = called_by;
-  held_by_ = currentThread;
+  recordAcquisition(called_by);
 }
 
 void Mutex::release(pointer called_by)
@@ -100,10 +92,8 @@ void Mutex::release(pointer called_by)
 //    kernel_debug_info->printCallInformation(called_by);
 //  }
   checkInvalidRelease("Mutex::release");
-  removeFromCurrentThreadHoldingList();
-  last_accessed_at_ = called_by;
-  held_by_ = 0;
-  mutex_ = 0;
+  recordRelease(called_by);
+  ArchThreads::atomic_set(mutex_, 0);
   // Wake up a sleeping thread. It is okay that the mutex is not held by the current thread any longer.
   // In worst case a new thread is woken up. Otherwise (first wake up, then release),
   // it could happen that a thread is going to sleep after the this one is trying to wake up one.
@@ -115,14 +105,4 @@ void Mutex::release(pointer called_by)
   {
     Scheduler::instance()->wake(thread_to_be_woken_up);
   }
-}
-
-bool Mutex::isFree()
-{
-  if(unlikely(ArchInterrupts::testIFSet() && Scheduler::instance()->isSchedulingEnabled()))
-  {
-    debug(LOCK, "Mutex::isFree: ERROR: Should not be used with IF=1 AND enabled Scheduler, use acquire instead\n");
-    assert(false);
-  }
-  return (mutex_ == 0);
 }

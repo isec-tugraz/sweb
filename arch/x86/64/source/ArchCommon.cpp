@@ -12,6 +12,8 @@
 #include "PageManager.h"
 #include "KernelMemoryManager.h"
 #include "Console.h"
+#include "ArchCpuLocalStorage.h"
+#include "ArchMulticore.h"
 
 extern Console* main_console;
 
@@ -253,6 +255,8 @@ extern "C" void entry64()
       : : "a"(KERNEL_DS) : "memory");
   asm("ltr %%ax" : : "a"(KERNEL_TSS));
 
+  CPULocalStorage::initialiseBootCPU();
+
   auto cpuid = get_cpuid(0);
   PRINT("Check SMEP support...\n");
   assert((cpuid.eax >= 1) && "CPU does not support any features");
@@ -348,6 +352,8 @@ void ArchCommon::drawStat()
 
 void ArchCommon::drawHeartBeat()
 {
+  if (currentCPU != bootCPU)
+    return;
   const char* clock = "/-\\|";
   static uint32 heart_beat_value = 0;
 

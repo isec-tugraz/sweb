@@ -3,7 +3,8 @@
 #include "BDManager.h"
 #include "BDRequest.h"
 #include "ArchInterrupts.h"
-#include "8259.h"
+#include "APIC.h"
+#include "ports.h"
 
 #include "Scheduler.h"
 #include "kprintf.h"
@@ -51,20 +52,13 @@ ATADriver::ATADriver( uint16 baseport, uint16 getdrive, uint16 irqnum ) : lock_(
   bool interrupt_context = ArchInterrupts::disableInterrupts();
   ArchInterrupts::enableInterrupts();
 
-  enableIRQ( irqnum );
-  if( irqnum > 8 )
-  {
-    enableIRQ( 2 );   // cascade
-  }
+  APIC::enableIRQ( irqnum );
 
   testIRQ( );
   if( !interrupt_context )
     ArchInterrupts::disableInterrupts();
   irq = irqnum;
   debug(ATA_DRIVER, "ctor: mode: %d !!\n", mode );
-
-  request_list_ = 0;
-  request_list_tail_ = 0;
 
   debug(ATA_DRIVER, "ctor: Driver created !!\n");
   return;
@@ -82,6 +76,7 @@ void ATADriver::testIRQ( )
 
 int32 ATADriver::rawReadSector ( uint32 start_sector, uint32 num_sectors, void *buffer )
 {
+  assert(system_state == BOOTING && "Raw reads are only used during device detection");
   BD_ATA_MODES old_mode = mode;
   mode = BD_PIO_NO_IRQ;
   uint32 result = readSector ( start_sector, num_sectors, buffer );
@@ -203,77 +198,42 @@ int32 ATADriver::writeSector ( uint32 start_sector, uint32 num_sectors, void * b
   return 0;
 }
 
-uint32 ATADriver::addRequest( BDRequest *br )
+uint32 ATADriver::addRequest(BDRequest* br)
 {
-  ScopeLock lock(lock_); // this lock might serialize stuff too much...
-  bool interrupt_context = false;
-  debug(ATA_DRIVER, "addRequest %d!\n", br->getCmd() );
-  if( mode != BD_PIO_NO_IRQ )
-  {
-    interrupt_context = ArchInterrupts::disableInterrupts();
+  ScopeLock lock(lock_); // Only one command may use the controller at a time.
+  bool interrupts_enabled = request_lock_.acquire();
+  assert(!active_request_);
+  if (mode != BD_PIO_NO_IRQ)
+    active_request_ = br;
 
-    //Add request to the list protected by the cli
-    if( request_list_ == 0 )
-      request_list_ = request_list_tail_ = br;
-    else
-    {
-      request_list_tail_->setNextRequest(br) ;
-      request_list_tail_ = br;
-    }
-  }
-
-  int32 res = -1;
-  
-  switch( br->getCmd() )
+  int32 result = -1;
+  switch (br->getCmd())
   {
     case BDRequest::BD_READ:
-      res = readSector( br->getStartBlock(), br->getNumBlocks(), br->getBuffer() );
+      result = readSector(br->getStartBlock(), br->getNumBlocks(), br->getBuffer());
       break;
     case BDRequest::BD_WRITE:
-      res = writeSector( br->getStartBlock(), br->getNumBlocks(), br->getBuffer() );
+      result = writeSector(br->getStartBlock(), br->getNumBlocks(), br->getBuffer());
       break;
     default:
-      res = -1;
       break;
   }
-  
-  if( res != 0 )
+
+  if (result != 0 || mode == BD_PIO_NO_IRQ)
   {
-    br->setStatus( BDRequest::BD_ERROR );
-    debug(ATA_DRIVER, "Got out on error !!\n");
-      if( interrupt_context )
-        ArchInterrupts::enableInterrupts();
-    return 0;
+    active_request_ = nullptr;
+    br->setStatus(result != 0 ? BDRequest::BD_ERROR : BDRequest::BD_DONE);
   }
 
-  if( mode == BD_PIO_NO_IRQ )
+  while (currentThread && br->getStatus() == BDRequest::BD_QUEUED)
   {
-    debug(ATA_DRIVER, "addRequest:No IRQ operation !!\n");
-    br->setStatus( BDRequest::BD_DONE );
-    return 0;
+    // The IRQ takes the same lock: completion cannot slip between this check and sleeping.
+    currentThread->setState(Sleeping);
+    request_lock_.release(false);
+    ArchThreads::yield(); // Switch with interrupts still disabled, as in Scheduler::sleep().
+    request_lock_.acquire();
   }
-
-  if (currentThread)
-  {
-    if(interrupt_context)
-      ArchInterrupts::enableInterrupts();
-    jiffies = 0;
-    while (br->getStatus() == BDRequest::BD_QUEUED && jiffies++ < IO_TIMEOUT*10);
-    if (jiffies >= IO_TIMEOUT*10)
-      TIMEOUT_WARNING();
-    if (br->getStatus() == BDRequest::BD_QUEUED)
-    {
-      ArchInterrupts::disableInterrupts();
-      if (br->getStatus() == BDRequest::BD_QUEUED)
-      {
-        currentThread->setState(Sleeping);
-        ArchInterrupts::enableInterrupts();
-        Scheduler::instance()->yield(); // this is necessary! setting state to sleep and continuing to run is a BAD idea
-      }
-      ArchInterrupts::enableInterrupts();
-    }
-  }
-
+  request_lock_.release(interrupts_enabled);
   return 0;
 }
 
@@ -297,28 +257,28 @@ bool ATADriver::waitForController( bool resetIfFailed = true )
   return true;
 }
 
-void ATADriver::nextRequest(BDRequest* br)
+void ATADriver::completeRequest(BDRequest* br)
 {
-  if(br->getThread())
-    br->getThread()->setState(Running);
-  request_list_ = br->getNextRequest();
+  assert(active_request_ == br);
+  active_request_ = nullptr;
+  if (br->getThread())
+    Scheduler::instance()->wake(br->getThread());
 }
 
 void ATADriver::serviceIRQ()
 {
+  ScopeIRQSpinLock lock(request_lock_);
   if( mode == BD_PIO_NO_IRQ )
     return;
 
-  if( request_list_ == 0 )
+  if( active_request_ == 0 )
   {
     debug(ATA_DRIVER, "serviceIRQ: IRQ without request!!\n");
-    outportbp( port + 0x206, 0x04 );
-    outportbp( port + 0x206, 0x00 ); // RESET COTROLLER
-    debug(ATA_DRIVER, "serviceIRQ: Reset controller!!\n");
+    inportbp(port + 7); // Acknowledge a late interrupt after completing or rejecting a command.
     return; // not my interrupt
   }
 
-  BDRequest* br = request_list_;
+  BDRequest* br = active_request_;
   debug(ATA_DRIVER, "serviceIRQ: Found active request!!\n");
 
   uint16* word_buff = (uint16*) br->getBuffer();
@@ -330,7 +290,7 @@ void ATADriver::serviceIRQ()
     if( !waitForController() )
     {
       br->setStatus( BDRequest::BD_ERROR );
-      nextRequest(br);
+      completeRequest(br);
       return;
     }
 
@@ -343,7 +303,7 @@ void ATADriver::serviceIRQ()
     if( blocks_done == br->getNumBlocks() )
     {
       br->setStatus( BDRequest::BD_DONE );
-      nextRequest(br);
+      completeRequest(br);
     }
   }
   else if( br->getCmd() == BDRequest::BD_WRITE )
@@ -354,14 +314,14 @@ void ATADriver::serviceIRQ()
       debug(ATA_DRIVER, "serviceIRQ:All done!!\n");
       br->setStatus( BDRequest::BD_DONE );
       debug(ATA_DRIVER, "serviceIRQ:Waking up thread!!\n");
-      nextRequest(br);
+      completeRequest(br);
     }
     else
     {
       if( !waitForController() )
       {
         br->setStatus( BDRequest::BD_ERROR );
-        nextRequest(br);
+        completeRequest(br);
         return;
       }
   
@@ -375,7 +335,7 @@ void ATADriver::serviceIRQ()
   {
     blocks_done = br->getNumBlocks();
     br->setStatus( BDRequest::BD_ERROR );
-    nextRequest(br);
+    completeRequest(br);
   }
 
   debug(ATA_DRIVER, "serviceIRQ:Request handled!!\n");

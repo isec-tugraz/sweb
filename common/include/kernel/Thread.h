@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "cpu_local.h"
 #include "fs/FileSystemInfo.h"
 
 #define STACK_CANARY ((uint32)0xDEADDEAD ^ (uint32)(size_t)this)
@@ -15,8 +16,9 @@ class Loader;
 class Terminal;
 class Mutex;
 class Lock;
+class Scheduler;
 
-extern Thread* currentThread;
+extern __cpu Thread* currentThread;
 
 class Thread
 {
@@ -39,6 +41,7 @@ class Thread
 
     /**
      * Marks the thread to be deleted by the scheduler.
+     * Only the current thread or a thread not yet added to a scheduler may be killed.
      * DO Not use new / delete in this Method, as it sometimes called from an Interrupt Handler with Interrupts disabled
      */
     virtual void kill();
@@ -105,9 +108,7 @@ class Thread
 
     /**
      * A single chained list containing all the locks held by the thread at the moment.
-     * This list is not locked. It may only be accessed by the thread himself,
-     * or by other threads in case they can ENSURE that this thread is not able to run at this moment.
-     * Changing the list has to be done atomic, else it cannot be ensured that the list is valid at any moment!
+     * Lock maintains this list under its diagnostic lock. The thread itself may also inspect it directly.
      */
     Lock* holding_lock_list_;
 
@@ -115,7 +116,8 @@ class Thread
     Thread(Thread const &src);
     Thread &operator=(Thread const &src);
 
-    volatile ThreadState state_;
+    ThreadState state_;
+    Scheduler* scheduler_; // Assigned once when enqueued; threads remain on this CPU.
 
     size_t tid_;
 
