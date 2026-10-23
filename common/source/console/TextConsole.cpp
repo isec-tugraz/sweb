@@ -81,7 +81,7 @@ void TextConsole::consoleScrollUp(uint8 const &state)
   char* fb = (char*) ArchCommon::getFBPtr();
   memmove((void*) (fb + (consoleGetNumColumns() * 2 * STAT_ROWS)),
           (void*) (fb + (consoleGetNumColumns() * 2 * (STAT_ROWS + 1))),
-          (consoleGetNumRows() - 1 + STAT_ROWS) * consoleGetNumColumns() * 2);
+          (consoleGetNumRows() - 1 - STAT_ROWS) * consoleGetNumColumns() * 2);
   for(size_t i = 0; i < consoleGetNumColumns(); i++)
   {
     fb[(i + (consoleGetNumRows() - 1) * consoleGetNumColumns()) * 2] = ' ';
