@@ -25,6 +25,9 @@
 #include "Terminal.h"
 #include "outerrstream.h"
 #include "user_progs.h"
+#ifdef CMAKE_X86_64
+#include "ArchMulticore.h"
+#endif
 
 extern void* kernel_end_address;
 
@@ -65,6 +68,9 @@ extern "C" void startup()
   ArchThreads::initialise();
   debug(MAIN, "Interrupts init\n");
   ArchInterrupts::initialise();
+#ifdef CMAKE_X86_64
+  ArchMulticore::initialise();
+#endif
 
   ArchInterrupts::setTimerFrequency(IRQ0_TIMER_FREQUENCY);
 

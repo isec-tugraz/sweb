@@ -5,6 +5,7 @@
 #include "ArchThreads.h"
 #include "assert.h"
 #include "Thread.h"
+#include "ArchMulticore.h"
 
 void ArchInterrupts::initialise()
 {
@@ -150,13 +151,6 @@ extern "C" void arch_saveThreadRegisters(uint64* base, uint64 error)
   assert(!currentThread || currentThread->isStackCanaryOK());
 }
 
-typedef struct {
-    uint32 padding;
-    uint64 rsp0; // actually the TSS has more fields, but we don't need them
-} __attribute__((__packed__))TSS;
-
-extern TSS g_tss;
-
 extern "C" void arch_contextSwitch()
 {
   if(outstanding_EOIs)
@@ -171,7 +165,7 @@ extern "C" void arch_contextSwitch()
   }
   assert(currentThread->isStackCanaryOK() && "Kernel stack corruption detected.");
   ArchThreadRegisters info = *currentThreadRegisters; // optimization: local copy produces more efficient code in this case
-  g_tss.rsp0 = info.rsp0;
+  currentCPU->tss.rsp0 = info.rsp0;
   if (currentThread->switch_to_userspace_)
   {
     asm volatile("fxrstor (%0)" :: "r"(info.fpu));
