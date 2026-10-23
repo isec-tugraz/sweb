@@ -4,15 +4,21 @@
 #include "debug_bochs.h"
 #include "Thread.h"
 #include "ArchInterrupts.h"
+#ifdef CMAKE_X86_64
+#include "ArchMulticore.h"
+#endif
 
 extern __cpu Thread* currentThread;
 
 __attribute__((noreturn)) void pre_new_sweb_assert(const char* condition, uint32 line, const char* file)
 {
+  ArchInterrupts::disableInterrupts();
+#ifdef CMAKE_X86_64
+  ArchMulticore::stopOtherCPUs();
+#endif
   system_state = KPANIC;
   char const *error_string = "KERNEL PANIC: Assertion Failed in File:  on Line:      ";
   char line_string[5];
-  ArchInterrupts::disableInterrupts();
   writeChar2Bochs('\n');
   writeLine2Bochs(condition);
   writeChar2Bochs('\n');
@@ -68,6 +74,9 @@ void sweb_assert(const char *condition, uint32 line, const char* file)
 {
   ArchInterrupts::disableInterrupts();
   static __cpu bool in_assert = false;
+#ifdef CMAKE_X86_64
+  ArchMulticore::stopOtherCPUs();
+#endif
   system_state = KPANIC;
   kprintfd("KERNEL PANIC: Assertion %s failed in File:Line %s:%d\n",condition, file, line);
   if (in_assert) {

@@ -15,6 +15,44 @@ CPU* bootCPU;
 static CPU* cpus;
 extern SegmentDescriptor gdt[7];
 extern uint8 boot_stack[];
+static CPU* stopping_cpu;
+
+struct InterruptFrame;
+
+extern "C" __attribute__((interrupt)) void arch_stopHandler(InterruptFrame*)
+{
+  assert(__atomic_load_n(&stopping_cpu, __ATOMIC_ACQUIRE) && "Unexpected NMI");
+  __atomic_store_n(&currentCPU->stopped, true, __ATOMIC_RELEASE);
+  while (true)
+    asm volatile("hlt"); // NMI entry disables interrupts; this CPU never resumes.
+}
+
+void ArchMulticore::stopOtherCPUs()
+{
+  ArchInterrupts::disableInterrupts();
+  if (!cpus || !currentCPU)
+    return;
+  CPU* expected = nullptr;
+  if (!__atomic_compare_exchange_n(&stopping_cpu, &expected, currentCPU, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+  {
+    if (expected == currentCPU)
+      return; // A recursive panic on the CPU already stopping the others.
+    while (true)
+      asm volatile("hlt"); // A simultaneous panic waits for the winning CPU's NMI.
+  }
+  for (size_t i = 0; i < ACPI::num_cpus; ++i)
+    if (&cpus[i] != currentCPU && __atomic_load_n(&cpus[i].online, __ATOMIC_ACQUIRE))
+      APIC::sendIPI(cpus[i].apic_id, 4 << 8); // NMI delivery; the vector field is ignored.
+  for (size_t i = 0; i < ACPI::num_cpus; ++i)
+  {
+    if (&cpus[i] == currentCPU || !__atomic_load_n(&cpus[i].online, __ATOMIC_ACQUIRE))
+      continue;
+    size_t attempts = 100000000;
+    while (!__atomic_load_n(&cpus[i].stopped, __ATOMIC_ACQUIRE) && --attempts)
+      asm volatile("pause");
+    assert(attempts && "CPU did not stop");
+  }
+}
 
 static void initialiseCPU(CPU* cpu)
 {

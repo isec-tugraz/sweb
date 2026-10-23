@@ -15,4 +15,5 @@ namespace APIC
   void disableTimer();
   void sendEOI();
   void startCPU(uint8 apic_id, uint32 entry_address);
+  void sendIPI(uint8 apic_id, uint32 command);
 }

@@ -177,24 +177,27 @@ static void startupDelay(uint16 ticks)
   outportb(0x61, gate);
 }
 
-static void sendStartupIPI(uint8 apic_id, uint32 command)
+void APIC::sendIPI(uint8 apic_id, uint32 command)
 {
+  bool enabled = ArchInterrupts::disableInterrupts();
   local_apic[0x310 / 4] = (uint32)apic_id << 24;
   local_apic[0x300 / 4] = command;
   size_t attempts = 10000000;
   while ((local_apic[0x300 / 4] & (1 << 12)) && --attempts)
     asm volatile("pause");
   assert(attempts && "APIC IPI delivery did not complete");
+  if (enabled)
+    ArchInterrupts::enableInterrupts();
 }
 
 void APIC::startCPU(uint8 apic_id, uint32 entry_address)
 {
   assert(!ArchInterrupts::testIFSet());
   assert(entry_address < 0x100000 && entry_address % PAGE_SIZE == 0);
-  sendStartupIPI(apic_id, 0xC500); // INIT, level triggered, asserted.
+  sendIPI(apic_id, 0xC500); // INIT, level triggered, asserted.
   startupDelay(11932); // 10 ms for the CPU to reset.
-  sendStartupIPI(apic_id, 0x8500); // Deassert INIT.
-  sendStartupIPI(apic_id, 0x600 | (entry_address / PAGE_SIZE)); // SIPI selects the real-mode entry page.
+  sendIPI(apic_id, 0x8500); // Deassert INIT.
+  sendIPI(apic_id, 0x600 | (entry_address / PAGE_SIZE)); // SIPI selects the real-mode entry page.
   startupDelay(239); // 200 us before the second SIPI.
-  sendStartupIPI(apic_id, 0x600 | (entry_address / PAGE_SIZE));
+  sendIPI(apic_id, 0x600 | (entry_address / PAGE_SIZE));
 }

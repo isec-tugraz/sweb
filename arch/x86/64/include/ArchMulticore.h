@@ -19,6 +19,7 @@ struct CPU
 
   uint8 apic_id;
   bool online;
+  bool stopped;
   void* tls;
   uint8* stack;
   ArchThreadRegisters registers;
@@ -34,4 +35,5 @@ namespace ArchMulticore
 {
   void initialise();
   void startOtherCPUs();
+  void stopOtherCPUs(); // Returns with local interrupts disabled.
 }

@@ -52,8 +52,15 @@ extern __cpu Thread *currentThread;
 
 #define ERRORHANDLER(X) {X, &arch_errorHandler_##X},
 #define IRQHANDLER(X) {X + 32, &arch_irqHandler_##X},
+#ifdef CMAKE_X86_64
+struct InterruptFrame;
+extern "C" __attribute__((interrupt)) void arch_stopHandler(InterruptFrame*);
+#endif
 InterruptHandlers InterruptUtils::handlers[] = {
   ERRORHANDLER(0)
+#ifdef CMAKE_X86_64
+  {2, reinterpret_cast<void(*)()>(arch_stopHandler)},
+#endif
   ERRORHANDLER(4)
   ERRORHANDLER(5)
   ERRORHANDLER(6)
