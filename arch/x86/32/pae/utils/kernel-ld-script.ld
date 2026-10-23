@@ -36,6 +36,14 @@ SECTIONS
   {
     LS_Data = .;
     data_start_address = .;
+    . = ALIGN(8);
+    __preinit_array_start = .;
+    KEEP(*(.preinit_array))
+    __preinit_array_end = .;
+    __init_array_start = .;
+    KEEP(*(SORT_BY_INIT_PRIORITY(.init_array.*)))
+    KEEP(*(.init_array))
+    __init_array_end = .;
     *(.data)
     . = ALIGN(4096);
     *(.gdt_stuff)
