@@ -6,7 +6,7 @@
 #include "FileSystemType.h"
 
 Superblock::Superblock(FileSystemType* fs_type, size_t s_dev) :
-    s_magic_(0), s_type_(fs_type), s_dev_(s_dev), s_flags_(0), s_root_(0), s_mountpoint_(0)
+    s_magic_(0), superblock_lock_("Superblock::superblock_lock_"), files_lock_("Superblock::files_lock_"), s_type_(fs_type), s_dev_(s_dev), s_flags_(0), s_root_(0), s_mountpoint_(0)
 {
     debug(SUPERBLOCK, "%s Superblock created\n", s_type_->getFSName());
 }
@@ -18,11 +18,24 @@ Superblock::~Superblock()
 
 void Superblock::deleteInode(Inode* inode)
 {
+  ScopeLock lock(superblock_lock_);
   assert(inode != 0);
-  dirty_inodes_.remove(inode);
-  used_inodes_.remove(inode);
-  all_inodes_.remove(inode);
+  assert(inode->numRefs() == 0);
+  removeInodeLocked(inode);
   delete inode;
+}
+
+void Superblock::removeInodeLocked(Inode* inode)
+{
+  assert(superblock_lock_.isHeldByCurrentThread());
+  dirty_inodes_.remove(inode);
+  all_inodes_.remove(inode);
+}
+
+void Superblock::writeInode(Inode* inode)
+{
+  ScopeLock lock(superblock_lock_);
+  writeInodeLocked(inode);
 }
 
 Dentry* Superblock::getRoot()
@@ -48,6 +61,7 @@ FileSystemType* Superblock::getFSType()
 
 int Superblock::fileOpened(File* file)
 {
+    ScopeLock lock(files_lock_);
     Inode* inode = file->getInode();
     assert(inode->getSuperblock() == this);
 
@@ -57,53 +71,69 @@ int Superblock::fileOpened(File* file)
     }
 
     s_files_.push_back(file);
+    inode->i_files_.push_back(file);
     used_inodes_.push_back(inode);
 
     return 0;
 }
 
-int Superblock::fileReleased(File* file)
+int Superblock::releaseFile(File* file)
 {
+    ScopeLock lock(files_lock_);
+    return releaseFileLocked(file);
+}
+
+int Superblock::releaseFileLocked(File* file)
+{
+    assert(files_lock_.isHeldByCurrentThread());
+    if (ustl::find(s_files_.begin(), s_files_.end(), file) == s_files_.end())
+        return -1;
+
     Inode* inode = file->getInode();
     assert(inode->getSuperblock() == this);
 
     s_files_.remove(file);
+    inode->i_files_.remove(file);
 
     if (inode->getNumOpenedFile() == 0)
     {
         used_inodes_.remove(inode);
     }
 
+    delete file;
     return 0;
 }
 
 void Superblock::releaseAllOpenFiles()
 {
     debug(SUPERBLOCK, "Releasing all open files\n");
-    while(!s_files_.empty())
+    ScopeLock lock(files_lock_);
+    while (!s_files_.empty())
     {
-        File* file = s_files_.front();
-        file->getInode()->release(file);
+        releaseFileLocked(s_files_.front());
     }
-
-    assert(s_files_.empty());
 }
 
 void Superblock::deleteAllInodes()
 {
-    for (Inode* inode : all_inodes_)
+    ScopeLock files_lock(files_lock_);
+    ScopeLock lock(superblock_lock_);
+    assert(s_files_.empty());
+    assert(dirty_inodes_.empty());
+    while (!all_inodes_.empty())
     {
+        Inode* inode = all_inodes_.front();
         while(!inode->getDentrys().empty())
         {
             delete inode->getDentrys().front();
         }
 
         debug(SUPERBLOCK, "~Superblock write inode to disc\n");
-        writeInode(inode);
+        assert(inode->numRefs() == 0);
+        writeInodeLocked(inode);
 
         debug(SUPERBLOCK, "~Superblock delete inode %p\n", inode);
+        removeInodeLocked(inode);
         delete inode;
     }
-
-    all_inodes_.clear();
 }

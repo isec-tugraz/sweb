@@ -234,7 +234,6 @@ File* MinixFSInode::open(Dentry* dentry, uint32 flag)
   debug(M_INODE, "Open file, flag: %x\n", flag);
   assert(ustl::find(i_dentrys_.begin(), i_dentrys_.end(), dentry) != i_dentrys_.end());
   File* file = (File*) (new MinixFSFile(this, dentry, flag));
-  i_files_.push_back(file);
   getSuperblock()->fileOpened(file);
   return file;
 }
@@ -355,9 +354,7 @@ void MinixFSInode::loadChildren()
       if (inode_index)
       {
         debug(M_INODE, "loadChildren: loading child %d\n", inode_index);
-        bool is_already_loaded = false;
-
-        MinixFSInode* inode = ((MinixFSSuperblock *) superblock_)->getInode(inode_index, is_already_loaded);
+        MinixFSInode* inode = ((MinixFSSuperblock *) superblock_)->getInode(inode_index);
 
         if (!inode)
         {
@@ -379,10 +376,6 @@ void MinixFSInode::loadChildren()
         Dentry *new_dentry = new Dentry(inode, i_dentrys_.front(), name);
         inode->i_dentrys_.push_back(new_dentry);
 
-        if (!is_already_loaded)
-        {
-          ((MinixFSSuperblock *) superblock_)->all_inodes_add_inode(inode);
-        }
       }
     }
   }

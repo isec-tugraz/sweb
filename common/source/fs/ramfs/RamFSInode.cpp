@@ -68,7 +68,6 @@ File* RamFSInode::open(Dentry* dentry, uint32 flag)
   assert(ustl::find(i_dentrys_.begin(), i_dentrys_.end(), dentry) != i_dentrys_.end());
 
   File* file = (File*) (new RamFSFile(this, dentry, flag));
-  i_files_.push_back(file);
   getSuperblock()->fileOpened(file);
   return file;
 }
