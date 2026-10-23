@@ -12,6 +12,7 @@
 #include "PageManager.h"
 #include "KernelMemoryManager.h"
 #include "Console.h"
+#include "ArchCpuLocalStorage.h"
 
 extern Console* main_console;
 
@@ -252,6 +253,8 @@ extern "C" void entry64()
       "mov %%ax, %%gs\n"
       : : "a"(KERNEL_DS) : "memory");
   asm("ltr %%ax" : : "a"(KERNEL_TSS));
+
+  CPULocalStorage::initialiseBootCPU();
 
   auto cpuid = get_cpuid(0);
   PRINT("Check SMEP support...\n");

@@ -1,10 +1,11 @@
 #pragma once
 
 #include "types.h"
+#include "cpu_local.h"
 
 class Thread;
 
-extern Thread * currentThread;
+extern __cpu Thread * currentThread;
 
 class BDRequest
 {

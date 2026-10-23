@@ -40,6 +40,22 @@ SECTIONS
     data_end_address = .;
   }
 
+  .tdata ALIGN(16) : AT(ADDR(.tdata) - LS_Virt)
+  {
+    tls_start = .;
+    *(.tdata .tdata.*)
+    tls_data_end = .;
+  }
+
+  .tbss ALIGN(16) : AT(ADDR(.tbss) - LS_Virt)
+  {
+    *(.tbss .tbss.*)
+    . = ALIGN(16);
+    tls_end = .;
+  }
+  . = tls_end;
+  ASSERT(tls_end - tls_start + 8 <= 4096, "Boot CPU TLS exceeds its initial storage")
+
   .bss ALIGN(4096) : AT(LS_Phys + (LS_Bss - LS_Code))
   {
     LS_Bss = .;

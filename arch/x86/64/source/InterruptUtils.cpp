@@ -157,8 +157,8 @@ extern SWEBDebugInfo const *kernel_debug_info;
 
 extern "C" void arch_contextSwitch();
 
-extern ArchThreadRegisters *currentThreadRegisters;
-extern Thread *currentThread;
+extern __cpu ArchThreadRegisters *currentThreadRegisters;
+extern __cpu Thread *currentThread;
 
 extern "C" void arch_irqHandler_0();
 extern "C" void irqHandler_0()

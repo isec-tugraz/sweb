@@ -47,8 +47,8 @@ ERROR_HANDLER(17)
 ERROR_HANDLER(18)
 ERROR_HANDLER(19)
 
-extern ArchThreadRegisters *currentThreadRegisters;
-extern Thread *currentThread;
+extern __cpu ArchThreadRegisters *currentThreadRegisters;
+extern __cpu Thread *currentThread;
 
 #define ERRORHANDLER(X) {X, &arch_errorHandler_##X},
 #define IRQHANDLER(X) {X + 32, &arch_irqHandler_##X},

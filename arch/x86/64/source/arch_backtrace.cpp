@@ -8,7 +8,7 @@
 #include "umap.h"
 #include "ArchCommon.h"
 
-extern Thread* currentThread;
+extern __cpu Thread* currentThread;
 
 struct StackFrame
 {

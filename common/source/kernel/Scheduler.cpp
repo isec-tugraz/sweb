@@ -14,8 +14,8 @@
 #include "ustring.h"
 #include "Lock.h"
 
-ArchThreadRegisters *currentThreadRegisters;
-Thread *currentThread;
+__cpu ArchThreadRegisters *currentThreadRegisters;
+__cpu Thread *currentThread;
 
 Scheduler *Scheduler::instance_ = nullptr;
 

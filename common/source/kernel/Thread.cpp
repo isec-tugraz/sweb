@@ -82,7 +82,7 @@ void* Thread::getKernelStackStartPointer()
 
 bool Thread::currentThreadIsStackCanaryOK()
 {
-  return !currentThread || currentThread->isStackCanaryOK();
+  return system_state == BOOTING || !currentThread || currentThread->isStackCanaryOK();
 }
 bool Thread::isStackCanaryOK()
 {

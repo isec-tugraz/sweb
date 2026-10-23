@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "cpu_local.h"
 #include "fs/FileSystemInfo.h"
 
 #define STACK_CANARY ((uint32)0xDEADDEAD ^ (uint32)(size_t)this)
@@ -16,7 +17,7 @@ class Terminal;
 class Mutex;
 class Lock;
 
-extern Thread* currentThread;
+extern __cpu Thread* currentThread;
 
 class Thread
 {
