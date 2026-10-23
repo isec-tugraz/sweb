@@ -48,7 +48,6 @@ set(KERNEL_IMAGE_OBJCOPY
 set(AVAILABLE_MEMORY 8M)
 
 set(QEMU_BIN qemu-system-x86_64)
-set(QEMU_CPUS 4 CACHE STRING "Number of CPUs for QEMU")
 set(QEMU_FLAGS_COMMON -smp ${QEMU_CPUS} -m ${AVAILABLE_MEMORY} -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot)
 string(REPLACE ";" " " QEMU_FLAGS_COMMON_STR "${QEMU_FLAGS_COMMON}")
 
