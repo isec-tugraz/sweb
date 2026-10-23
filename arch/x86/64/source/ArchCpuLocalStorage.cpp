@@ -1,7 +1,7 @@
 #include "ArchCpuLocalStorage.h"
 
 extern uint8 tls_start[], tls_data_end[], tls_end[];
-static uint8 boot_cpu_tls[4096] __attribute__((aligned(16)));
+static uint8 boot_cpu_tls[32768] __attribute__((aligned(16)));
 
 size_t CPULocalStorage::size()
 {

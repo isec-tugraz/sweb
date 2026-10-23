@@ -62,7 +62,7 @@ SECTIONS
     tls_end = .;
   }
   . = tls_end;
-  ASSERT(tls_end - tls_start + 8 <= 4096, "Boot CPU TLS exceeds its initial storage")
+  ASSERT(tls_end - tls_start + 8 <= 32768, "Boot CPU TLS exceeds its initial storage")
 
   .bss ALIGN(4096) : AT(LS_Phys + (LS_Bss - LS_Code))
   {

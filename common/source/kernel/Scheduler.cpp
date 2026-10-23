@@ -17,13 +17,11 @@
 __cpu ArchThreadRegisters *currentThreadRegisters;
 __cpu Thread *currentThread;
 
-Scheduler *Scheduler::instance_ = nullptr;
+__cpu Scheduler Scheduler::scheduler_;
 
 Scheduler *Scheduler::instance()
 {
-  if (unlikely(!instance_))
-    instance_ = new Scheduler();
-  return instance_;
+  return &scheduler_;
 }
 
 Scheduler::Scheduler()

@@ -8,6 +8,7 @@
 #include "ArchMemory.h"
 #include "ArchInterrupts.h"
 #include "kprintf.h"
+#include "Scheduler.h"
 
 __cpu CPU* currentCPU;
 static CPU* cpus;
@@ -96,6 +97,7 @@ extern "C" __attribute__((noreturn)) void apEntry(CPU* cpu)
   size_t stack_address;
   asm volatile("mov %%rsp, %0" : "=r"(stack_address));
   assert(stack_address >= (size_t)cpu->stack && stack_address < (size_t)cpu->stack + 0x4000);
+  Scheduler::instance(); // Construct this CPU's scheduler before reporting it ready.
   __atomic_store_n(&cpu->online, true, __ATOMIC_RELEASE);
   while (true)
     asm volatile("hlt"); // Secondary CPUs remain parked until SMP scheduling is implemented.

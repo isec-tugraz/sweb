@@ -58,7 +58,7 @@ class Scheduler
      */
     void unlockScheduling();
 
-    static Scheduler *instance_;
+    static __cpu Scheduler scheduler_;
 
     typedef ustl::list<Thread*> ThreadList;
     ThreadList threads_;
