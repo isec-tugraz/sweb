@@ -32,4 +32,5 @@ extern __cpu CPU* currentCPU;
 namespace ArchMulticore
 {
   void initialise();
+  void startOtherCPUs();
 }

@@ -104,6 +104,9 @@ PageManager::PageManager() : lock_("PageManager::lock_")
   }
 
   size_t num_pages_for_bitmap = (number_of_pages_ / 8) / PAGE_SIZE + 1;
+#ifdef CMAKE_X86_64
+  Bitmap::setBit(page_usage_table, used_pages, 8); // Physical 0x8000: secondary-CPU real-mode entry.
+#endif
   assert(used_pages < number_of_pages_/2 && "No space for kernel heap!");
 
   HEAP_PAGES = number_of_pages_/2 - used_pages;

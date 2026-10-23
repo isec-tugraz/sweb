@@ -121,6 +121,9 @@ extern "C" void startup()
   Scheduler::instance()->addNewThread(main_console);
   Scheduler::instance()->addNewThread(new ProcessRegistry(new FileSystemInfo(*default_working_dir), user_progs /*see user_progs.h*/));
   Scheduler::instance()->printThreadList();
+#ifdef CMAKE_X86_64
+  ArchMulticore::startOtherCPUs();
+#endif
 
   kprintf("Now enabling Interrupts...\n");
   system_state = RUNNING;

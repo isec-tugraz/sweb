@@ -4,6 +4,10 @@
 #include "assert.h"
 #include "kstring.h"
 #include "new.h"
+#include "APIC.h"
+#include "ArchMemory.h"
+#include "ArchInterrupts.h"
+#include "kprintf.h"
 
 __cpu CPU* currentCPU;
 static CPU* cpus;
@@ -55,4 +59,79 @@ void ArchMulticore::initialise()
     }
   }
   assert(currentCPU && "Boot CPU is missing from the MADT");
+}
+
+extern "C" uint8 ap_boot_start[], ap_boot_end[], ap_boot_parameters[];
+static PageMapLevel4Entry ap_root[PAGE_MAP_LEVEL_4_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
+static struct
+{
+  uint16 limit;
+  size_t base;
+} __attribute__((packed)) ap_idtr;
+
+struct APBootParameters
+{
+  uint32 cr3;
+  uint32 reserved;
+  size_t stack;
+  CPU* cpu;
+  void (*entry)(CPU*);
+};
+static_assert(sizeof(APBootParameters) == 32);
+
+extern "C" __attribute__((noreturn)) void apEntry(CPU* cpu)
+{
+  CPULocalStorage::initialise(cpu->tls);
+  assert(!currentCPU && !currentThread && !currentThreadRegisters);
+  uint32 eax, ebx, ecx, edx;
+  asm volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1), "c"(0));
+  assert((ebx >> 24) == cpu->apic_id && !ArchInterrupts::testIFSet());
+  initialiseCPU(cpu);
+  currentThreadRegisters = &cpu->registers;
+  size_t root = (size_t)VIRTUAL_TO_PHYSICAL_BOOT(ArchMemory::getRootOfKernelPagingStructure());
+  asm volatile("mov %0, %%cr3\n"
+               "lidt %1" : : "r"(root), "m"(ap_idtr) : "memory");
+
+  assert(currentCPU == cpu && currentThreadRegisters == &cpu->registers);
+  size_t stack_address;
+  asm volatile("mov %%rsp, %0" : "=r"(stack_address));
+  assert(stack_address >= (size_t)cpu->stack && stack_address < (size_t)cpu->stack + 0x4000);
+  __atomic_store_n(&cpu->online, true, __ATOMIC_RELEASE);
+  while (true)
+    asm volatile("hlt"); // Secondary CPUs remain parked until SMP scheduling is implemented.
+}
+
+void ArchMulticore::startOtherCPUs()
+{
+  assert(!ArchInterrupts::testIFSet());
+  const size_t entry_address = 0x8000;
+  size_t code_size = ap_boot_end - ap_boot_start;
+  assert(code_size <= PAGE_SIZE);
+  uint8* entry = (uint8*)ArchMemory::getIdentAddressOfPPN(entry_address / PAGE_SIZE);
+  memcpy(entry, ap_boot_start, code_size);
+  APBootParameters* parameters = (APBootParameters*)(entry + (ap_boot_parameters - ap_boot_start));
+
+  memcpy(ap_root, ArchMemory::getRootOfKernelPagingStructure(), PAGE_SIZE);
+  ap_root[0] = ap_root[480]; // Temporary low mapping for real-mode code, removed on entry to C++.
+  asm volatile("sidt %0" : "=m"(ap_idtr));
+  CPU* boot_cpu = currentCPU;
+  ArchThreadRegisters* boot_registers = currentThreadRegisters;
+  for (size_t i = 0; i < ACPI::num_cpus; ++i)
+  {
+    CPU* cpu = &cpus[i];
+    if (cpu == boot_cpu)
+      continue;
+    cpu->tls = new uint8[CPULocalStorage::size()];
+    cpu->stack = new uint8[0x4000];
+    *parameters = {(uint32)(size_t)VIRTUAL_TO_PHYSICAL_BOOT(ap_root), 0,
+                   (size_t)cpu->stack + 0x4000, cpu, apEntry};
+    APIC::startCPU(cpu->apic_id, entry_address);
+    size_t attempts = 100000000;
+    while (!__atomic_load_n(&cpu->online, __ATOMIC_ACQUIRE) && --attempts)
+      asm volatile("pause");
+    assert(attempts && "Secondary CPU did not finish startup");
+    assert(currentCPU == boot_cpu && currentThreadRegisters == boot_registers && !currentThread);
+    kprintfd("CPU %u online: private TLS %p, stack %p, GDT %p, TSS %p\n",
+             cpu->apic_id, cpu->tls, cpu->stack, cpu->gdt, &cpu->tss);
+  }
 }
