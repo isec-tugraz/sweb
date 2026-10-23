@@ -28,6 +28,7 @@ struct CPU
 
 static_assert(sizeof(CPU::TSS) == 104);
 extern __cpu CPU* currentCPU;
+extern CPU* bootCPU;
 
 namespace ArchMulticore
 {

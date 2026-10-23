@@ -11,6 +11,7 @@
 #include "Scheduler.h"
 
 __cpu CPU* currentCPU;
+CPU* bootCPU;
 static CPU* cpus;
 extern SegmentDescriptor gdt[7];
 extern uint8 boot_stack[];
@@ -60,9 +61,11 @@ void ArchMulticore::initialise()
     }
   }
   assert(currentCPU && "Boot CPU is missing from the MADT");
+  bootCPU = currentCPU;
 }
 
 extern "C" uint8 ap_boot_start[], ap_boot_end[], ap_boot_parameters[];
+extern "C" void arch_contextSwitch();
 static PageMapLevel4Entry ap_root[PAGE_MAP_LEVEL_4_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
 static struct
 {
@@ -98,9 +101,15 @@ extern "C" __attribute__((noreturn)) void apEntry(CPU* cpu)
   asm volatile("mov %%rsp, %0" : "=r"(stack_address));
   assert(stack_address >= (size_t)cpu->stack && stack_address < (size_t)cpu->stack + 0x4000);
   Scheduler::instance(); // Construct this CPU's scheduler before reporting it ready.
+  APIC::initialiseLocal();
   __atomic_store_n(&cpu->online, true, __ATOMIC_RELEASE);
-  while (true)
-    asm volatile("hlt"); // Secondary CPUs remain parked until SMP scheduling is implemented.
+  // Locks are bypassed during boot; wait until the boot CPU finishes allocating for all CPUs.
+  while (__atomic_load_n(&system_state, __ATOMIC_ACQUIRE) != RUNNING)
+    asm volatile("pause");
+  APIC::enableTimer();
+  Scheduler::instance()->schedule();
+  arch_contextSwitch(); // IRET enables interrupts on the selected thread's stack.
+  __builtin_unreachable();
 }
 
 void ArchMulticore::startOtherCPUs()

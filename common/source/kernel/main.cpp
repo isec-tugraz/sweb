@@ -123,7 +123,7 @@ extern "C" void startup()
 #endif
 
   kprintf("Now enabling Interrupts...\n");
-  system_state = RUNNING;
+  __atomic_store_n(&system_state, RUNNING, __ATOMIC_RELEASE);
 
   ArchInterrupts::enableInterrupts();
 

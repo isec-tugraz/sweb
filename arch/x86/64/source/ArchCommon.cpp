@@ -13,6 +13,7 @@
 #include "KernelMemoryManager.h"
 #include "Console.h"
 #include "ArchCpuLocalStorage.h"
+#include "ArchMulticore.h"
 
 extern Console* main_console;
 
@@ -351,6 +352,8 @@ void ArchCommon::drawStat()
 
 void ArchCommon::drawHeartBeat()
 {
+  if (currentCPU != bootCPU)
+    return;
   const char* clock = "/-\\|";
   static uint32 heart_beat_value = 0;
 

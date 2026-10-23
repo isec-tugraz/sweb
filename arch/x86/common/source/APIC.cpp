@@ -64,15 +64,9 @@ static void mapRegisters()
   io_apic = (volatile uint32*)(base + PAGE_SIZE);
 }
 
-void APIC::initialise()
+void APIC::initialiseLocal()
 {
   assert(!ArchInterrupts::testIFSet());
-  uint32 eax, ebx, ecx, edx;
-  asm volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1), "c"(0));
-  assert((edx & (1 << 9)) && "CPU requires a local APIC");
-  ACPI::initialise();
-  mapRegisters();
-
   uint32 low, high;
   asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(0x1B)); // IA32_APIC_BASE.
   assert(!(low & (1 << 10)) && "x2APIC mode is not supported");
@@ -88,6 +82,18 @@ void APIC::initialise()
   local_apic[0x3E0 / 4] = 3; // Timer divide configuration: divide by 16.
   local_apic[0x320 / 4] = (1 << 17) | (1 << 16) | 32; // Periodic timer, initially masked, vector 32.
   local_apic[0x380 / 4] = 0x500000; // Scheduling interval in APIC ticks, not a calibrated duration.
+}
+
+void APIC::initialise()
+{
+  assert(!ArchInterrupts::testIFSet());
+  uint32 eax, ebx, ecx, edx;
+  asm volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1), "c"(0));
+  assert((edx & (1 << 9)) && "CPU requires a local APIC");
+  ACPI::initialise();
+  mapRegisters();
+
+  initialiseLocal();
 
   max_redirection = (readIOAPIC(1) >> 16) & 0xFF;
   assert(max_redirection <= 119); // Redirection registers use an 8-bit selector.

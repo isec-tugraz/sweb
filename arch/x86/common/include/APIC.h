@@ -8,6 +8,7 @@ extern __cpu volatile size_t outstanding_EOIs;
 namespace APIC
 {
   void initialise();
+  void initialiseLocal();
   void enableIRQ(uint16 irq);
   void disableIRQ(uint16 irq);
   void enableTimer();
