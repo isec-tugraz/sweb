@@ -21,7 +21,7 @@
 #include "PageFaultHandler.h"
 #include "Stabs2DebugInfo.h"
 
-#include "8259.h"
+#include "APIC.h"
 
 #define LO_WORD(x) (((uint32)(x)) & 0x0000FFFF)
 #define HI_WORD(x) ((((uint32)(x)) >> 16) & 0x0000FFFF)
@@ -130,6 +130,12 @@ extern "C" void irqHandler_0()
 }
 
 extern "C" void arch_irqHandler_65();
+extern "C" void arch_irqHandler_127();
+extern "C" void irqHandler_127()
+{
+  // A spurious APIC interrupt has no in-service entry and must not receive an EOI.
+}
+
 extern "C" void irqHandler_65()
 {
   Scheduler::instance()->schedule();
