@@ -35,6 +35,7 @@ Scheduler::Scheduler()
 
 void Scheduler::schedule()
 {
+  assert(this == instance());
   assert(!ArchInterrupts::testIFSet() && "Tried to schedule with Interrupts enabled");
   if (block_scheduling_)
   {
@@ -50,6 +51,7 @@ void Scheduler::schedule()
   auto it = threads_.begin();
   for(; it != threads_.end(); ++it)
   {
+    assert((*it)->scheduler_ == this);
     if((*it)->schedulable())
     {
       currentThread = *it;
@@ -72,12 +74,15 @@ void Scheduler::addNewThread(Thread *thread)
   KernelMemoryManager::instance()->getKMMLock().acquire();
   lockScheduling();
   KernelMemoryManager::instance()->getKMMLock().release();
+  assert(!thread->scheduler_ && "Thread already belongs to a scheduler");
+  thread->scheduler_ = this;
   threads_.push_back(thread);
   unlockScheduling();
 }
 
 void Scheduler::sleep(Lock* waiters_lock)
 {
+  assert(this == instance() && currentThread->scheduler_ == this);
   assert(block_scheduling_ == 0);
   // A timer must not switch threads between marking us sleeping and releasing the waiters list.
   bool interrupts_enabled = ArchInterrupts::disableInterrupts();
@@ -91,6 +96,8 @@ void Scheduler::sleep(Lock* waiters_lock)
 
 void Scheduler::wake(Thread* thread_to_wake)
 {
+  // The thread stays in its owner's list; another CPU may mark it runnable here.
+  assert(thread_to_wake->scheduler_);
   assert(thread_to_wake->getState() == Sleeping && "Thread must be sleeping before it can be woken");
   thread_to_wake->setState(Running);
 }
@@ -124,8 +131,11 @@ void Scheduler::cleanupDeadThreads()
   for (uint32 i = 0; i < threads_.size() && thread_count < thread_count_max; ++i)
   {
     Thread* tmp = threads_[i];
+    assert(tmp->scheduler_ == this);
     if (tmp->getState() == ToBeDestroyed)
     {
+      // Only this CPU can run or clean up its threads, so the old stack is no longer in use.
+      assert(tmp != currentThread && !tmp->holding_lock_list_ && !tmp->lock_waiting_on_);
       destroy_list[thread_count++] = tmp;
       threads_.erase(threads_.begin() + i); // Note: erase will not realloc!
       --i;
@@ -156,6 +166,7 @@ void Scheduler::printThreadList()
 
 void Scheduler::lockScheduling() //not as severe as stopping Interrupts
 {
+  assert(this == instance() && "Scheduler lists may only be changed on their owning CPU");
   if (unlikely(ArchThreads::testSetLock(block_scheduling_, 1)))
     kpanict("FATAL ERROR: Scheduler::*: block_scheduling_ was set !! How the Hell did the program flow get here then ?\n");
 }

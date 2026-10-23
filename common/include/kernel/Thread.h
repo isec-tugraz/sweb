@@ -16,6 +16,7 @@ class Loader;
 class Terminal;
 class Mutex;
 class Lock;
+class Scheduler;
 
 extern __cpu Thread* currentThread;
 
@@ -40,6 +41,7 @@ class Thread
 
     /**
      * Marks the thread to be deleted by the scheduler.
+     * Only the current thread or a thread not yet added to a scheduler may be killed.
      * DO Not use new / delete in this Method, as it sometimes called from an Interrupt Handler with Interrupts disabled
      */
     virtual void kill();
@@ -117,6 +119,7 @@ class Thread
     Thread &operator=(Thread const &src);
 
     ThreadState state_;
+    Scheduler* scheduler_; // Assigned once when enqueued; threads remain on this CPU.
 
     size_t tid_;
 
