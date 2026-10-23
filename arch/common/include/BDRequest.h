@@ -64,7 +64,6 @@ class BDRequest
 
       requesting_thread_ = currentThread;
       blocks_done_ = 0;
-      next_request_ = 0;
     };
 
     uint32 getDevID(){ return dev_id_; };
@@ -72,17 +71,15 @@ class BDRequest
     uint32 getStartBlock(){ return start_block_; };
     uint32 getNumBlocks(){ return num_block_; };
     uint32 getResult(){ return result_; };
-    BD_RESULT getStatus(){ return status_; };
+    BD_RESULT getStatus(){ return __atomic_load_n(&status_, __ATOMIC_ACQUIRE); };
     uint32 getBlocksDone(){ return blocks_done_; };
     void *getBuffer(){ return buffer_; };
     Thread *getThread(){ return requesting_thread_; };
-    BDRequest *getNextRequest(){ return next_request_; };
 
     void setStartBlock( uint32 start_blk ){ start_block_=start_blk; };
     void setResult( uint32 result ){ result_=result; };
-    void setStatus( BD_RESULT status ){ status_=status; };
+    void setStatus( BD_RESULT status ){ __atomic_store_n(&status_, status, __ATOMIC_RELEASE); };
     void setBlocksDone( uint32 bdone ){ blocks_done_=bdone; };
-    void setNextRequest( BDRequest *next ){ next_request_=next; };
     void setNumBlocks(uint32 num_block){ num_block_ = num_block; };
 
   private:
@@ -97,6 +94,5 @@ class BDRequest
     uint32 blocks_done_;
     void *buffer_;
     Thread *requesting_thread_;
-    BDRequest *next_request_;
 };
 
