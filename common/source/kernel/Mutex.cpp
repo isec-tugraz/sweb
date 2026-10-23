@@ -103,7 +103,7 @@ void Mutex::release(pointer called_by)
   removeFromCurrentThreadHoldingList();
   last_accessed_at_ = called_by;
   held_by_ = 0;
-  mutex_ = 0;
+  ArchThreads::atomic_set(mutex_, 0);
   // Wake up a sleeping thread. It is okay that the mutex is not held by the current thread any longer.
   // In worst case a new thread is woken up. Otherwise (first wake up, then release),
   // it could happen that a thread is going to sleep after the this one is trying to wake up one.

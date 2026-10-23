@@ -114,6 +114,6 @@ void SpinLock::release(pointer called_by)
   removeFromCurrentThreadHoldingList();
   last_accessed_at_ = called_by;
   held_by_ = 0;
-  lock_ = 0;
+  ArchThreads::atomic_set(lock_, 0);
 }
 

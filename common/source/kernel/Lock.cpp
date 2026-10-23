@@ -244,7 +244,7 @@ void Lock::lockWaitersList()
 
 void Lock::unlockWaitersList()
 {
-  waiters_list_lock_ = 0;
+  ArchThreads::atomic_set(waiters_list_lock_, 0);
 }
 
 void Lock::pushFrontCurrentThreadToWaitersList()
