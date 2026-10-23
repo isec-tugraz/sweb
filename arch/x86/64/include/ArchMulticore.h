@@ -20,6 +20,7 @@ struct CPU
   uint8 apic_id;
   bool online;
   bool stopped;
+  size_t tlb_generation;
   void* tls;
   uint8* stack;
   ArchThreadRegisters registers;
@@ -36,4 +37,5 @@ namespace ArchMulticore
   void initialise();
   void startOtherCPUs();
   void stopOtherCPUs(); // Returns with local interrupts disabled.
+  void invalidateTLBs(); // Runtime callers must leave interrupts enabled while waiting for acknowledgements.
 }

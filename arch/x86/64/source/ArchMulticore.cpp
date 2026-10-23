@@ -16,6 +16,7 @@ static CPU* cpus;
 extern SegmentDescriptor gdt[7];
 extern uint8 boot_stack[];
 static CPU* stopping_cpu;
+static size_t tlb_generation;
 
 struct InterruptFrame;
 
@@ -25,6 +26,16 @@ extern "C" __attribute__((interrupt)) void arch_stopHandler(InterruptFrame*)
   __atomic_store_n(&currentCPU->stopped, true, __ATOMIC_RELEASE);
   while (true)
     asm volatile("hlt"); // NMI entry disables interrupts; this CPU never resumes.
+}
+
+extern "C" __attribute__((interrupt)) void arch_tlbHandler(InterruptFrame*)
+{
+  ++outstanding_EOIs;
+  // Coalesced IPIs are fine: this flush covers every generation published before it.
+  size_t generation = __atomic_load_n(&tlb_generation, __ATOMIC_ACQUIRE);
+  ArchMemory::flushTlb();
+  APIC::sendEOI();
+  __atomic_store_n(&currentCPU->tlb_generation, generation, __ATOMIC_RELEASE);
 }
 
 void ArchMulticore::stopOtherCPUs()
@@ -51,6 +62,37 @@ void ArchMulticore::stopOtherCPUs()
     while (!__atomic_load_n(&cpus[i].stopped, __ATOMIC_ACQUIRE) && --attempts)
       asm volatile("pause");
     assert(attempts && "CPU did not stop");
+  }
+}
+
+void ArchMulticore::invalidateTLBs()
+{
+  if (system_state != RUNNING)
+  {
+    ArchMemory::flushTlb();
+    return;
+  }
+  assert(ArchInterrupts::testIFSet() && "TLB shootdowns must be able to receive other CPUs' IPIs");
+  // Publish our page-table changes and acknowledge locally without an IPI interrupting between the two.
+  ArchInterrupts::disableInterrupts();
+  size_t generation = __atomic_add_fetch(&tlb_generation, 1, __ATOMIC_SEQ_CST);
+  assert(generation && "TLB generation wrapped");
+  ArchMemory::flushTlb();
+  __atomic_store_n(&currentCPU->tlb_generation, generation, __ATOMIC_RELEASE);
+  ArchInterrupts::enableInterrupts();
+  for (size_t i = 0; i < ACPI::num_cpus; ++i)
+    if (&cpus[i] != currentCPU && __atomic_load_n(&cpus[i].online, __ATOMIC_ACQUIRE) &&
+        !__atomic_load_n(&cpus[i].stopped, __ATOMIC_ACQUIRE))
+      APIC::sendIPI(cpus[i].apic_id, 66); // Fixed delivery, TLB-invalidation vector.
+  for (size_t i = 0; i < ACPI::num_cpus; ++i)
+  {
+    if (&cpus[i] == currentCPU || !__atomic_load_n(&cpus[i].online, __ATOMIC_ACQUIRE))
+      continue;
+    size_t attempts = 100000000;
+    while (__atomic_load_n(&cpus[i].tlb_generation, __ATOMIC_ACQUIRE) < generation &&
+           !__atomic_load_n(&cpus[i].stopped, __ATOMIC_ACQUIRE) && --attempts)
+      asm volatile("pause");
+    assert(attempts && "CPU did not invalidate its TLB");
   }
 }
 

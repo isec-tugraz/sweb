@@ -5,6 +5,7 @@
 #include "kstring.h"
 #include "ArchThreads.h"
 #include "Thread.h"
+#include "ArchMulticore.h"
 
 PageMapLevel4Entry kernel_page_map_level_4[PAGE_MAP_LEVEL_4_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
 PageDirPointerTableEntry kernel_page_directory_pointer_table[2 * PAGE_DIR_POINTER_TABLE_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
@@ -38,25 +39,21 @@ bool ArchMemory::unmapPage(uint64 virtual_page)
   ArchMemoryMapping m = resolveMapping(virtual_page);
 
   assert(m.page_ppn != 0 && m.page_size == PAGE_SIZE && m.pt[m.pti].present);
-  m.pt[m.pti].present = 0;
-  PageManager::instance()->freePPN(m.page_ppn);
-  ((uint64*)m.pt)[m.pti] = 0; // for easier debugging
-  bool empty = checkAndRemove<PageTableEntry>(getIdentAddressOfPPN(m.pt_ppn), m.pti);
-  if (empty)
-  {
-    empty = checkAndRemove<PageDirPageTableEntry>(getIdentAddressOfPPN(m.pd_ppn), m.pdi);
-    PageManager::instance()->freePPN(m.pt_ppn);
-  }
-  if (empty)
-  {
-    empty = checkAndRemove<PageDirPointerTablePageDirEntry>(getIdentAddressOfPPN(m.pdpt_ppn), m.pdpti);
-    PageManager::instance()->freePPN(m.pd_ppn);
-  }
-  if (empty)
-  {
+  bool pt_empty = checkAndRemove<PageTableEntry>(getIdentAddressOfPPN(m.pt_ppn), m.pti);
+  bool pd_empty = pt_empty && checkAndRemove<PageDirPageTableEntry>(getIdentAddressOfPPN(m.pd_ppn), m.pdi);
+  bool pdpt_empty = pd_empty && checkAndRemove<PageDirPointerTablePageDirEntry>(getIdentAddressOfPPN(m.pdpt_ppn), m.pdpti);
+  if (pdpt_empty)
     checkAndRemove<PageMapLevel4Entry>(getIdentAddressOfPPN(m.pml4_ppn), m.pml4i);
+
+  // Detach the mappings and finish every CPU's TLB flush before reusing data or page-table pages.
+  ArchMulticore::invalidateTLBs();
+  PageManager::instance()->freePPN(m.page_ppn);
+  if (pt_empty)
+    PageManager::instance()->freePPN(m.pt_ppn);
+  if (pd_empty)
+    PageManager::instance()->freePPN(m.pd_ppn);
+  if (pdpt_empty)
     PageManager::instance()->freePPN(m.pdpt_ppn);
-  }
   return true;
 }
 
@@ -122,7 +119,10 @@ ArchMemory::~ArchMemory()
   {
     if (pml4[pml4i].present)
     {
-      PageDirPointerTableEntry* pdpt = (PageDirPointerTableEntry*) getIdentAddressOfPPN(pml4[pml4i].page_ppn);
+      size_t pdpt_ppn = pml4[pml4i].page_ppn;
+      pml4[pml4i].present = 0;
+      ArchMulticore::invalidateTLBs();
+      PageDirPointerTableEntry* pdpt = (PageDirPointerTableEntry*) getIdentAddressOfPPN(pdpt_ppn);
       for (uint64 pdpti = 0; pdpti < PAGE_DIR_POINTER_TABLE_ENTRIES; pdpti++)
       {
         if (pdpt[pdpti].pd.present)
@@ -151,8 +151,7 @@ ArchMemory::~ArchMemory()
           PageManager::instance()->freePPN(pdpt[pdpti].pd.page_ppn);
         }
       }
-      pml4[pml4i].present = 0;
-      PageManager::instance()->freePPN(pml4[pml4i].page_ppn);
+      PageManager::instance()->freePPN(pdpt_ppn);
     }
   }
   PageManager::instance()->freePPN(page_map_level_4_);
@@ -283,7 +282,7 @@ void ArchMemory::mapKernelPage(size_t virtual_page, size_t physical_page)
   pt[mapping.pti].writeable = 1;
   pt[mapping.pti].page_ppn = physical_page;
   pt[mapping.pti].present = 1;
-  asm volatile ("movq %%cr3, %%rax; movq %%rax, %%cr3;" ::: "%rax");
+  ArchMulticore::invalidateTLBs();
 }
 
 void ArchMemory::unmapKernelPage(size_t virtual_page)
@@ -298,10 +297,9 @@ void ArchMemory::unmapKernelPage(size_t virtual_page)
   assert(pd[mapping.pdi].pt.present);
   PageTableEntry *pt = (PageTableEntry*) getIdentAddressOfPPN(pd[mapping.pdi].pt.page_ppn);
   assert(pt[mapping.pti].present);
-  pt[mapping.pti].present = 0;
-  pt[mapping.pti].writeable = 0;
-  PageManager::instance()->freePPN(pt[mapping.pti].page_ppn);
-  asm volatile ("movq %%cr3, %%rax; movq %%rax, %%cr3;" ::: "%rax");
+  ((size_t*)pt)[mapping.pti] = 0;
+  ArchMulticore::invalidateTLBs();
+  PageManager::instance()->freePPN(mapping.page_ppn);
 }
 
 PageMapLevel4Entry* ArchMemory::getRootOfKernelPagingStructure()
@@ -311,5 +309,6 @@ PageMapLevel4Entry* ArchMemory::getRootOfKernelPagingStructure()
 
 void ArchMemory::flushTlb()
 {
+  // Global pages and PCIDs are disabled.
   asm volatile ("movq %%cr3, %%rax; movq %%rax, %%cr3;" ::: "%rax", "memory");
 }
