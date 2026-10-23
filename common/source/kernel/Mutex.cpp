@@ -40,10 +40,7 @@ bool Mutex::acquireNonBlocking(pointer called_by)
     // so we are not allowed to lock it.
     return false;
   }
-  assert(held_by_ == 0);
-  last_accessed_at_ = called_by;
-  held_by_ = currentThread;
-  pushFrontToCurrentThreadHoldingList();
+  recordAcquisition(called_by);
   return true;
 }
 
@@ -76,14 +73,9 @@ void Mutex::acquire(pointer called_by)
     // check for deadlocks, interrupts...
     doChecksBeforeWaiting();
     sleepAndRelease();
-    // We have been waken up again.
-    currentThread->lock_waiting_on_ = 0;
   }
 
-  assert(held_by_ == 0);
-  pushFrontToCurrentThreadHoldingList();
-  last_accessed_at_ = called_by;
-  held_by_ = currentThread;
+  recordAcquisition(called_by);
 }
 
 void Mutex::release(pointer called_by)
@@ -100,9 +92,7 @@ void Mutex::release(pointer called_by)
 //    kernel_debug_info->printCallInformation(called_by);
 //  }
   checkInvalidRelease("Mutex::release");
-  removeFromCurrentThreadHoldingList();
-  last_accessed_at_ = called_by;
-  held_by_ = 0;
+  recordRelease(called_by);
   ArchThreads::atomic_set(mutex_, 0);
   // Wake up a sleeping thread. It is okay that the mutex is not held by the current thread any longer.
   // In worst case a new thread is woken up. Otherwise (first wake up, then release),

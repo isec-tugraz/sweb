@@ -224,9 +224,7 @@ void Scheduler::printLockingInformation()
   }
   for(Thread* t : threads_)
   {
-    if(t->lock_waiting_on_)
-      debug(LOCK, "Thread %s (%p) is waiting on lock: %s (%p).\n",
-            t->getName(), t, t->lock_waiting_on_ ->getName(), t->lock_waiting_on_ );
+    Lock::printWaitingOn(t);
   }
   debug(LOCK, "Scheduler::printLockingInformation finished\n");
   unlockScheduling();

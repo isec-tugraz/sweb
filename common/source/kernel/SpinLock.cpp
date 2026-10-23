@@ -38,10 +38,7 @@ bool SpinLock::acquireNonBlocking(pointer called_by)
     return false;
   }
   // The spinlock is now held by the current thread.
-  assert(held_by_ == 0);
-  last_accessed_at_ = called_by;
-  held_by_ = currentThread;
-  pushFrontToCurrentThreadHoldingList();
+  recordAcquisition(called_by);
   return true;
 }
 
@@ -64,7 +61,6 @@ void SpinLock::acquire(pointer called_by)
     // to push the current thread to the waiters list.
     doChecksBeforeWaiting();
 
-    currentThread->lock_waiting_on_ = this;
     lockWaitersList();
     pushFrontCurrentThreadToWaitersList();
     unlockWaitersList();
@@ -79,12 +75,9 @@ void SpinLock::acquire(pointer called_by)
     lockWaitersList();
     removeCurrentThreadFromWaitersList();
     unlockWaitersList();
-    currentThread->lock_waiting_on_ = 0;
   }
   // The current thread is now holding the spinlock
-  last_accessed_at_ = called_by;
-  held_by_ = currentThread;
-  pushFrontToCurrentThreadHoldingList();
+  recordAcquisition(called_by);
 }
 
 bool SpinLock::isFree()
@@ -111,9 +104,6 @@ void SpinLock::release(pointer called_by)
 //    kernel_debug_info->printCallInformation(called_by);
 //  }
   checkInvalidRelease("SpinLock::release");
-  removeFromCurrentThreadHoldingList();
-  last_accessed_at_ = called_by;
-  held_by_ = 0;
+  recordRelease(called_by);
   ArchThreads::atomic_set(lock_, 0);
 }
-

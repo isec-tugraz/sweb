@@ -23,29 +23,26 @@ public:
 
   /**
    * Print out the list of threads waiting on the current thread.
-   * Be careful when printing out this, it may happen that some threads are
-   * removed from the waiters list. In this case, the behaviour is undefined.
-   * (in case the current thread is not holding/locking the lock).
+   * The diagnostic lock keeps the list stable while printing.
    */
   void printWaitersList();
 
   /**
    * Print out the list of locks which are held by a thread (time desc order).
-   * Be careful when printing out the list of another thread (not the current thread).
-   * You have to ensure that the thread cannot continue meanwhile, else it may happen
-   * that he is modifying the list... That may be bad (and probably even crush the system).
+   * The caller must keep the thread alive; the diagnostic lock protects its holding list.
    * @param thread The thread which is holding the locks.
    */
   static void printHoldingList(Thread* thread);
+  static void printWaitingOn(Thread* thread);
 
   Thread* heldBy() const
   {
-    return held_by_;
+    return __atomic_load_n(&held_by_, __ATOMIC_ACQUIRE);
   }
 
   bool isHeldBy(Thread* thread) const
   {
-    return (held_by_ == thread);
+    return (heldBy() == thread);
   }
 
   inline const char* getName() const
@@ -87,14 +84,14 @@ protected:
   }
 
   /**
-   * Push the lock onto the holding lst of the current thread.
+   * Record the owner and add this lock to its holding list.
    */
-  void pushFrontToCurrentThreadHoldingList();
+  void recordAcquisition(pointer called_by);
 
   /**
-   * Remove the lock from the holding list of the current thread.
+   * Clear the owner and remove this lock from its holding list.
    */
-  void removeFromCurrentThreadHoldingList();
+  void recordRelease(pointer called_by);
 
   /**
    * Check if a deadlock would happen in case the current thread would wait for this lock.
@@ -180,15 +177,12 @@ private:
 
   /**
    * The single chained list of threads waiting on this lock.
-   * The list can be read out while the lock is not held (for checks and prints).
-   * To be able to read out without locking, all modifying accesses have to be atomic!
-   * If not, the list may become invalid while someone is reading out of it!
+   * The diagnostic lock protects traversal against insertions and removals.
    */
   Thread* waiters_list_;
 
   /**
-   * The lock for the waiters list. The list has to be locked for writing access,
-   * but may be used for unlocked access in case no element is going to be removed meanwhile.
+   * Serializes waiting and waking. List modifications additionally take the diagnostic lock.
    */
   size_t waiters_list_lock_;
 
