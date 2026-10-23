@@ -2,6 +2,8 @@
 
 #include "ArchThreads.h"
 
+class Scheduler;
+
 struct CPU
 {
   struct TSS
@@ -21,6 +23,7 @@ struct CPU
   bool online;
   bool stopped;
   size_t tlb_generation;
+  Scheduler* scheduler;
   void* tls;
   uint8* stack;
   ArchThreadRegisters registers;
@@ -38,4 +41,5 @@ namespace ArchMulticore
   void startOtherCPUs();
   void stopOtherCPUs(); // Returns with local interrupts disabled.
   void invalidateTLBs(); // Runtime callers must leave interrupts enabled while waiting for acknowledgements.
+  Scheduler* nextScheduler();
 }

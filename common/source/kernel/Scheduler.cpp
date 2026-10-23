@@ -24,7 +24,7 @@ Scheduler *Scheduler::instance()
   return &scheduler_;
 }
 
-Scheduler::Scheduler()
+Scheduler::Scheduler() : incoming_lock_("Scheduler::incoming_lock_")
 {
   block_scheduling_ = 0;
   ticks_ = 0;
@@ -71,12 +71,38 @@ void Scheduler::addNewThread(Thread *thread)
   debug(SCHEDULER, "addNewThread: %p  %zd:%s\n", thread, thread->getTID(), thread->getName());
   if (currentThread)
     ArchThreads::debugCheckNewThread(thread);
+  if (this != instance())
+  {
+    ScopeLock lock(incoming_lock_);
+    assert(!thread->scheduler_ && "Thread already belongs to a scheduler");
+    thread->scheduler_ = this;
+    incoming_threads_.push_back(thread);
+    return;
+  }
   KernelMemoryManager::instance()->getKMMLock().acquire();
   lockScheduling();
   KernelMemoryManager::instance()->getKMMLock().release();
   assert(!thread->scheduler_ && "Thread already belongs to a scheduler");
   thread->scheduler_ = this;
   threads_.push_back(thread);
+  unlockScheduling();
+}
+
+void Scheduler::receiveThreads()
+{
+  assert(this == instance());
+  ScopeLock lock(incoming_lock_);
+  if (incoming_threads_.empty())
+    return;
+  KernelMemoryManager::instance()->getKMMLock().acquire();
+  lockScheduling();
+  KernelMemoryManager::instance()->getKMMLock().release();
+  for (Thread* thread : incoming_threads_)
+  {
+    assert(thread->scheduler_ == this);
+    threads_.push_back(thread);
+  }
+  incoming_threads_.clear();
   unlockScheduling();
 }
 

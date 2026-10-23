@@ -4,6 +4,7 @@
 #include <ulist.h>
 #include "IdleThread.h"
 #include "CleanupThread.h"
+#include "Mutex.h"
 
 class Thread;
 class Mutex;
@@ -41,6 +42,7 @@ class Scheduler
     friend class CleanupThread;
 
     void cleanupDeadThreads();
+    void receiveThreads();
 
   private:
     Scheduler();
@@ -62,6 +64,8 @@ class Scheduler
 
     typedef ustl::list<Thread*> ThreadList;
     ThreadList threads_;
+    ThreadList incoming_threads_;
+    Mutex incoming_lock_;
 
     size_t block_scheduling_;
 

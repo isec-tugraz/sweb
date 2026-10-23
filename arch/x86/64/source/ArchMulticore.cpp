@@ -18,6 +18,15 @@ extern uint8 boot_stack[];
 static CPU* stopping_cpu;
 static size_t tlb_generation;
 
+Scheduler* ArchMulticore::nextScheduler()
+{
+  static size_t next_cpu;
+  assert(system_state == RUNNING);
+  size_t index = ArchThreads::atomic_add(next_cpu, 1) % ACPI::num_cpus;
+  assert(__atomic_load_n(&cpus[index].online, __ATOMIC_ACQUIRE) && cpus[index].scheduler);
+  return cpus[index].scheduler;
+}
+
 struct InterruptFrame;
 
 extern "C" __attribute__((interrupt)) void arch_stopHandler(InterruptFrame*)
@@ -142,6 +151,7 @@ void ArchMulticore::initialise()
   }
   assert(currentCPU && "Boot CPU is missing from the MADT");
   bootCPU = currentCPU;
+  bootCPU->scheduler = Scheduler::instance();
 }
 
 extern "C" uint8 ap_boot_start[], ap_boot_end[], ap_boot_parameters[];
@@ -180,7 +190,7 @@ extern "C" __attribute__((noreturn)) void apEntry(CPU* cpu)
   size_t stack_address;
   asm volatile("mov %%rsp, %0" : "=r"(stack_address));
   assert(stack_address >= (size_t)cpu->stack && stack_address < (size_t)cpu->stack + 0x4000);
-  Scheduler::instance(); // Construct this CPU's scheduler before reporting it ready.
+  cpu->scheduler = Scheduler::instance(); // Construct this CPU's scheduler before reporting it ready.
   APIC::initialiseLocal();
   __atomic_store_n(&cpu->online, true, __ATOMIC_RELEASE);
   // Locks are bypassed during boot; wait until the boot CPU finishes allocating for all CPUs.

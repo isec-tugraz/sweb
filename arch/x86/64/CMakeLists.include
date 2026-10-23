@@ -48,7 +48,8 @@ set(KERNEL_IMAGE_OBJCOPY
 set(AVAILABLE_MEMORY 8M)
 
 set(QEMU_BIN qemu-system-x86_64)
-set(QEMU_FLAGS_COMMON -m ${AVAILABLE_MEMORY} -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot)
+set(QEMU_CPUS 4 CACHE STRING "Number of CPUs for QEMU")
+set(QEMU_FLAGS_COMMON -smp ${QEMU_CPUS} -m ${AVAILABLE_MEMORY} -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot)
 string(REPLACE ";" " " QEMU_FLAGS_COMMON_STR "${QEMU_FLAGS_COMMON}")
 
 # kvm: Run kvm in non debugging mode
@@ -77,8 +78,8 @@ add_custom_target(qemugdb
 
 # qemutacos: Run qemu in pipe monitor mode for tacos
 add_custom_target(qemutacos
-  COMMAND ${QEMU_BIN} -hda ${HDD_IMAGE} -m ${AVAILABLE_MEMORY} -snapshot -monitor pipe:qemu -nographic -debugcon stdio
-  COMMENT "Executing `${QEMU_BIN} -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon stdio`"
+  COMMAND ${QEMU_BIN} -smp ${QEMU_CPUS} -hda ${HDD_IMAGE} -m ${AVAILABLE_MEMORY} -snapshot -monitor pipe:qemu -nographic -debugcon stdio
+  COMMENT "Executing `${QEMU_BIN} -smp ${QEMU_CPUS} -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon stdio`"
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
   )
 

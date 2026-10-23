@@ -6,6 +6,9 @@
 #include "VfsSyscall.h"
 #include "VirtualFileSystem.h"
 #include "PageManager.h"
+#ifdef CMAKE_X86_64
+#include "ArchMulticore.h"
+#endif
 
 ProcessRegistry* ProcessRegistry::instance_ = 0;
 
@@ -108,6 +111,10 @@ void ProcessRegistry::createProcess(const char* path)
   debug(PROCESS_REG, "create process %s\n", path);
   Thread* process = new UserProcess(path, new FileSystemInfo(*working_dir_));
   debug(PROCESS_REG, "created userprocess %s\n", path);
+#ifdef CMAKE_X86_64
+  ArchMulticore::nextScheduler()->addNewThread(process);
+#else
   Scheduler::instance()->addNewThread(process);
+#endif
   debug(PROCESS_REG, "added thread %s\n", path);
 }
