@@ -116,7 +116,7 @@ class Thread
     Thread(Thread const &src);
     Thread &operator=(Thread const &src);
 
-    volatile ThreadState state_;
+    ThreadState state_;
 
     size_t tid_;
 

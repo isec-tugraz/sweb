@@ -181,13 +181,13 @@ size_t Thread::getTID()
 
 ThreadState Thread::getState() const
 {
-  return state_;
+  return __atomic_load_n(&state_, __ATOMIC_ACQUIRE);
 }
 
 void Thread::setState(ThreadState new_state)
 {
-  assert(!((state_ == ToBeDestroyed) && (new_state != ToBeDestroyed)) && "Tried to change thread state when thread was already set to be destroyed");
+  assert(!((getState() == ToBeDestroyed) && (new_state != ToBeDestroyed)) && "Tried to change thread state when thread was already set to be destroyed");
   assert(!((new_state == Sleeping) && (currentThread != this)) && "Setting other threads to sleep is not thread-safe");
 
-  state_ = new_state;
+  __atomic_store_n(&state_, new_state, __ATOMIC_RELEASE);
 }

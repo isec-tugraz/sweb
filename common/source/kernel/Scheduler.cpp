@@ -78,18 +78,22 @@ void Scheduler::addNewThread(Thread *thread)
   unlockScheduling();
 }
 
-void Scheduler::sleep()
+void Scheduler::sleep(Lock* waiters_lock)
 {
-  currentThread->setState(Sleeping);
   assert(block_scheduling_ == 0);
-  yield();
+  // A timer must not switch threads between marking us sleeping and releasing the waiters list.
+  bool interrupts_enabled = ArchInterrupts::disableInterrupts();
+  currentThread->setState(Sleeping);
+  if (waiters_lock)
+    waiters_lock->unlockWaitersList();
+  ArchThreads::yield();
+  if (interrupts_enabled)
+    ArchInterrupts::enableInterrupts();
 }
 
 void Scheduler::wake(Thread* thread_to_wake)
 {
-  // wait until the thread is sleeping
-  while(thread_to_wake->getState() != Sleeping)
-    yield();
+  assert(thread_to_wake->getState() == Sleeping && "Thread must be sleeping before it can be woken");
   thread_to_wake->setState(Running);
 }
 
@@ -148,7 +152,7 @@ void Scheduler::printThreadList()
   debug(SCHEDULER, "Scheduler::printThreadList: %zd Threads in List\n", threads_.size());
   for (size_t c = 0; c < threads_.size(); ++c)
     debug(SCHEDULER, "Scheduler::printThreadList: threads_[%zd]: %p  %zd:%25s     [%s]\n", c, threads_[c],
-          threads_[c]->getTID(), threads_[c]->getName(), Thread::threadStatePrintable[threads_[c]->state_]);
+          threads_[c]->getTID(), threads_[c]->getName(), Thread::threadStatePrintable[threads_[c]->getState()]);
   unlockScheduling();
 }
 

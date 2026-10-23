@@ -338,8 +338,5 @@ void Lock::sleepAndRelease ()
 {
   currentThread->lock_waiting_on_ = this;
   pushFrontCurrentThreadToWaitersList();
-  unlockWaitersList();
-  // we can risk to go to sleep after the list has been unlocked,
-  // because the thread waking this thread waits until it goes to sleep
-  Scheduler::instance()->sleep();
+  Scheduler::instance()->sleep(this);
 }

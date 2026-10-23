@@ -16,7 +16,8 @@ class Scheduler
     static Scheduler *instance();
 
     void addNewThread(Thread *thread);
-    void sleep();
+    // If supplied, release the waiters list lock after marking the current thread sleeping.
+    void sleep(Lock* waiters_lock = nullptr);
     void wake(Thread *thread_to_wake);
     void yield();
     void printThreadList();
