@@ -191,7 +191,7 @@ add_custom_target (kernel_to_image
 
     # x86/32 doesn't generate kernel.dbg
     COMMAND ${CMAKE_COMMAND} -E touch "./kernel.dbg"
-    COMMAND ./exe2minixfs ${HDD_IMAGE_RAW} 32256 "${CMAKE_SOURCE_DIR}/utils/images/menu.lst" boot/grub/menu.lst
+    COMMAND ./exe2minixfs ${HDD_IMAGE_RAW} 1 "${CMAKE_SOURCE_DIR}/utils/images/menu.lst" boot/grub/menu.lst
                                                  ./kernel.x boot/kernel.x
                                                  ./kernel.dbg boot/kernel.dbg
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
@@ -225,7 +225,7 @@ add_custom_target (userspace_to_image
     DEPENDS blank_hdd_image ${FINAL_USERSPACE_NAMES} exe2minixfs
     COMMAND mkdir -p userspace/data
     COMMAND cp -f ${CMAKE_SOURCE_DIR}/userspace/data/* ${PROJECT_BINARY_DIR}/userspace/data
-    COMMAND ./exe2minixfs ${HDD_IMAGE_RAW} 10321920 ${MINIXFS_ARGUMENT}
+    COMMAND ./exe2minixfs ${HDD_IMAGE_RAW} 2 ${MINIXFS_ARGUMENT}
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMENT "Copying userspace programs to image..."
 )
