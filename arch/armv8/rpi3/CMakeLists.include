@@ -27,7 +27,7 @@ COMMAND ${PROJECT_BINARY_DIR}/add-dbg ${PROJECT_BINARY_DIR}/kernel.x ${PROJECT_B
 COMMAND touch ${PROJECT_BINARY_DIR}/debug_info.c
 COMMAND ${CMAKE_C_COMPILER} -c ${PROJECT_BINARY_DIR}/debug_info.c -o ${PROJECT_BINARY_DIR}/lib/debug_info.o
 COMMAND "${OBJCOPY_EXECUTABLE}" --add-section .swebdbg="${PROJECT_BINARY_DIR}/kernel.dbg" --set-section-flags .swebdbg=load,data ${PROJECT_BINARY_DIR}/lib/debug_info.o
-COMMAND rm ${PROJECT_BINARY_DIR}/debug_info.c
+COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_BINARY_DIR}/debug_info.c
 )
 
 
@@ -66,13 +66,13 @@ add_custom_target(qemugdb
   )
 
 add_custom_target(lst
-  COMMAND rm -rf kernel.asm
+  COMMAND ${CMAKE_COMMAND} -E remove kernel.asm
   COMMAND aarch64-linux-gnu-objdump -d kernel.x > kernel.lst
   COMMAND reset -I
   )
   
   add_custom_target(image
-  COMMAND rm -rf kernel8.img
+  COMMAND ${CMAKE_COMMAND} -E remove kernel8.img
   COMMAND aarch64-linux-gnu-objcopy -O binary kernel.x kernel8.img
   COMMAND reset -I
   )

@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
@@ -223,8 +224,7 @@ endif()
 #Custom Command: invoke exe2minixfs and copy all userspace programs to our hd image second partition
 add_custom_target (userspace_to_image
     DEPENDS blank_hdd_image ${FINAL_USERSPACE_NAMES} exe2minixfs
-    COMMAND mkdir -p userspace/data
-    COMMAND cp -f ${CMAKE_SOURCE_DIR}/userspace/data/* ${PROJECT_BINARY_DIR}/userspace/data
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/userspace/data ${PROJECT_BINARY_DIR}/userspace/data
     COMMAND ./exe2minixfs ${HDD_IMAGE_RAW} 10321920 ${MINIXFS_ARGUMENT}
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMENT "Copying userspace programs to image..."
@@ -289,7 +289,7 @@ add_custom_target(rungdb
 #Custom target: make mrproper
 #Makes really clean (except for the object files)
 add_custom_target(mrproper
-    COMMAND make clean
+    COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target clean
     COMMAND ${PROJECT_SOURCE_DIR}/utils/prompt.sh "rm -fR ${PROJECT_BINARY_DIR}/*: remove all arguments recursively [Y/n]? "
     COMMAND rm -fR ${PROJECT_BINARY_DIR}/* || true
     COMMAND cmake -DARCH=${ARCH} ${PROJECT_SOURCE_DIR} ${CMAKE_CROSS_COMPILE_FLAGS}
@@ -297,7 +297,7 @@ add_custom_target(mrproper
 
 #Custom target: make debug
 add_custom_target(debug
-    COMMAND make clean
+    COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target clean
     COMMAND ${PROJECT_SOURCE_DIR}/utils/prompt.sh "rm -fR ${PROJECT_BINARY_DIR}/*: remove all arguments recursively [Y/n]? "
     COMMAND rm -fR ${PROJECT_BINARY_DIR}/* || true
     COMMAND cmake -DDEBUG=1 -DARCH=${ARCH} ${PROJECT_SOURCE_DIR} ${CMAKE_CROSS_COMPILE_FLAGS}
@@ -319,11 +319,11 @@ MAKE_ARCH_TARGET(armv8_rpi3_hardware armv8/rpi3 "")
 
 #Builds the doxygen documentation
 add_custom_target(doxygen
-    COMMAND mkdir -p \"${PROJECT_SOURCE_DIR}/doc\"
-    COMMAND cp \"${PROJECT_SOURCE_DIR}/utils/sweb.dox\" \"${PROJECT_SOURCE_DIR}/doc/sweb_cmake.dox\"
+    COMMAND ${CMAKE_COMMAND} -E make_directory \"${PROJECT_SOURCE_DIR}/doc\"
+    COMMAND ${CMAKE_COMMAND} -E copy \"${PROJECT_SOURCE_DIR}/utils/sweb.dox\" \"${PROJECT_SOURCE_DIR}/doc/sweb_cmake.dox\"
     COMMAND sed -i -e 's/\\$$\\[DOC_OUTPUT_DIR\\]$$/docs/' '${PROJECT_SOURCE_DIR}/doc/sweb_cmake.dox'
     COMMAND ${DOXYGEN_EXECUTABLE} \"${PROJECT_SOURCE_DIR}/doc/sweb_cmake.dox\"
-    COMMAND rm -f \"${PROJECT_SOURCE_DIR}/doc/sweb_cmake.dox\"
+    COMMAND ${CMAKE_COMMAND} -E remove \"${PROJECT_SOURCE_DIR}/doc/sweb_cmake.dox\"
     COMMENT "Building SWEB documentation"
 )
 
