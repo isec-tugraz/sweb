@@ -23,7 +23,8 @@ int32 RamFSFile::read(char *buffer, size_t count, l_off_t offset)
   if (((flag_ & O_RDONLY) || (flag_ & O_RDWR)) && (f_inode_->getMode() & A_READABLE))
   {
     int32 read_bytes = f_inode_->readData(offset_ + offset, count, buffer);
-    offset_ += read_bytes;
+    if (read_bytes >= 0)
+      offset_ += read_bytes;
     return read_bytes;
   }
   else
@@ -38,7 +39,8 @@ int32 RamFSFile::write(const char *buffer, size_t count, l_off_t offset)
   if (((flag_ & O_WRONLY) || (flag_ & O_RDWR)) && (f_inode_->getMode() & A_WRITABLE))
   {
     int32 written_bytes = f_inode_->writeData(offset_ + offset, count, buffer);
-    offset_ += written_bytes;
+    if (written_bytes >= 0)
+      offset_ += written_bytes;
     return written_bytes;
   }
   else
