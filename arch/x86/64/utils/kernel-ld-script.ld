@@ -53,4 +53,6 @@ SECTIONS
     PROVIDE(kernel_end_address = .);
   }
 
+  ASSERT(kernel_end_address - LS_Virt <= 0x200000,
+         "x86_64 kernel exceeds the initial 2 MiB boot mapping")
 }
