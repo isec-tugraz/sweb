@@ -17,7 +17,7 @@ set(ARCH_APPEND_LD_ARGUMENTS )
 
 
 function(ARCH2OBJ ARCHOBJ_LIBNAME LIBRARY_NAME)
-  file(GLOB arch_files "*.32.C")
+  file(GLOB arch_files CONFIGURE_DEPENDS "*.32.C")
 
   if(arch_files)
     set(ARCHOBJS_TARGET ${LIBRARY_NAME}_archobjs)
