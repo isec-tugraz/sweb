@@ -29,6 +29,7 @@ private:
    * @param present true if the fault happened on a already mapped page
    * @param writing true if the fault happened by writing to an address, else reading
    * @param fetch true in case the fault happened by an instruction fetch, else by an operand fetch
+   * @param instruction_pointer instruction which caused the page fault, if available
    * @param switch_to_us the switch to userspace flag of the current thread
    */
   static inline void handlePageFault(size_t address, bool user,
@@ -47,5 +48,5 @@ public:
    */
   static void enterPageFault(size_t address, bool user,
                              bool present, bool writing,
-                             bool fetch);
+                             bool fetch, size_t instruction_pointer = 0);
 };
