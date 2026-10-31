@@ -1,7 +1,7 @@
 # Build and boot verification
 
-[Build and boot](../.github/workflows/ci.yml) runs on pushes, pull requests, and
-manual dispatches. It replaces the retired Travis configuration. Each architecture
+[Build and boot](../.github/workflows/ci.yml) runs on pull requests, pushes to
+`main`, and manual dispatches. It replaces the retired Travis configuration. Each architecture
 has an independent Ubuntu 24.04 job using distribution-packaged GCC, CMake, and
 QEMU (software emulation; KVM is not required). Jobs do not stop other matrix jobs
 when one architecture fails. The token has read-only repository access.

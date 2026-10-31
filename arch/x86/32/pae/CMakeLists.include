@@ -25,32 +25,32 @@ set(KERNEL_IMAGE_OBJCOPY
 
 # kvm: Run kvm in non debugging mode
 add_custom_target(kvm
-  COMMAND qemu-system-i386 -m 8M -cpu kvm32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot
-  COMMENT "Executing `qemu-system-i386 -m 8M -cpu kvm32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot`"
+  COMMAND qemu-system-i386 -smp ${QEMU_CPUS} -m 8M -cpu kvm32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot
+  COMMENT "Executing `qemu-system-i386 -smp ${QEMU_CPUS} -m 8M -cpu kvm32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot`"
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
   COMMAND reset -I
   )
 
 # qemu: Run qemu in non debugging mode
 add_custom_target(qemu
-	COMMAND	qemu-system-i386 -m 8M -cpu qemu32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot
-	COMMENT "Executing `qemu-system-i386 -m 8M -cpu qemu32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot`"
+	COMMAND	qemu-system-i386 -smp ${QEMU_CPUS} -m 8M -cpu qemu32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot
+	COMMENT "Executing `qemu-system-i386 -smp ${QEMU_CPUS} -m 8M -cpu qemu32 -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot`"
 	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 	COMMAND reset -I
 	)
 
 # qemugdb: Run qemu in non debugging mode
 add_custom_target(qemugdb
-	COMMAND	qemu-system-i386 -s -S -m 8M -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot
-	COMMENT "Executing `gdb qemu-system-i386 -s -S -m 8M -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot on localhost:1234`"
+	COMMAND	qemu-system-i386 -smp ${QEMU_CPUS} -s -S -m 8M -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot
+	COMMENT "Executing `gdb qemu-system-i386 -smp ${QEMU_CPUS} -s -S -m 8M -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot on localhost:1234`"
 	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 	COMMAND reset -I
 	)
 
 # qemutacos: Run qemu in pipe monitor mode for tacos
 add_custom_target(qemutacos
-  COMMAND qemu-system-i386 -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon stdio
-  COMMENT "Executing `qemu-system-i386 -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon stdio -no-reboot`"
+  COMMAND qemu-system-i386 -smp ${QEMU_CPUS} -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon stdio
+  COMMENT "Executing `qemu-system-i386 -smp ${QEMU_CPUS} -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon stdio -no-reboot`"
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
   )
 

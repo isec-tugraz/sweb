@@ -136,14 +136,8 @@ class VfsSyscall
      */
     static uint32 getFileSize(uint32 fd);
 
-    /**
-     * get the File descriptor object from the global variable
-     * @param the fd int
-     * @return the file descriptor object
-     */
-    static FileDescriptor* getFileDescriptor(uint32 fd);
-
   private:
+    static FileDescriptor* getFileDescriptor(uint32 fd);
     VfsSyscall();
     ~VfsSyscall();
 };

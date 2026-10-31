@@ -26,7 +26,7 @@ set(KERNEL_IMAGE_OBJCOPY
 set(AVAILABLE_MEMORY 8M)
 
 set(QEMU_BIN qemu-system-i386)
-set(QEMU_FLAGS_COMMON -m ${AVAILABLE_MEMORY} -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot)
+set(QEMU_FLAGS_COMMON -smp ${QEMU_CPUS} -m ${AVAILABLE_MEMORY} -drive file=${HDD_IMAGE},index=0,media=disk -debugcon stdio -no-reboot)
 string(REPLACE ";" " " QEMU_FLAGS_COMMON_STR "${QEMU_FLAGS_COMMON}")
 
 add_custom_target(kvm
@@ -54,8 +54,8 @@ add_custom_target(qemugdb
 
 # qemutacos: Run qemu in pipe monitor mode for tacos
 add_custom_target(qemutacos
-  COMMAND ${QEMU_BIN} -hda ${HDD_IMAGE} -m ${AVAILABLE_MEMORY} -snapshot -monitor pipe:qemu -nographic -debugcon /dev/stdout
-  COMMENT "Executing `qemu-system-i386 -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon /dev/stdout`"
+  COMMAND ${QEMU_BIN} -smp ${QEMU_CPUS} -hda ${HDD_IMAGE} -m ${AVAILABLE_MEMORY} -snapshot -monitor pipe:qemu -nographic -debugcon /dev/stdout
+  COMMENT "Executing `qemu-system-i386 -smp ${QEMU_CPUS} -hda ${HDD_IMAGE} -m 8M -snapshot -monitor pipe:qemu -nographic -debugcon /dev/stdout`"
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
   )
 

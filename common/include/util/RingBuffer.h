@@ -12,6 +12,7 @@ extern "C"
 #include "new.h"
 #include "ArchThreads.h"
 #include "assert.h"
+#include "IRQSpinLock.h"
 
 template<class T>
 class RingBuffer
@@ -29,6 +30,7 @@ class RingBuffer
     T *buffer_;
     size_t write_pos_;
     size_t read_pos_;
+    IRQSpinLock lock_;
 };
 
 template <class T>
@@ -50,30 +52,31 @@ RingBuffer<T>::~RingBuffer()
 template <class T>
 void RingBuffer<T>::put ( T c )
 {
+  ScopeIRQSpinLock lock(lock_);
   size_t old_write_pos=write_pos_;
   if ( old_write_pos == read_pos_ )
     return;
   buffer_[old_write_pos]=c;
-  ArchThreads::testSetLock ( write_pos_, ( old_write_pos + 1 ) % buffer_size_ );
+  write_pos_ = (old_write_pos + 1) % buffer_size_;
 }
 
 template <class T>
 void RingBuffer<T>::clear()
 {
-  ArchThreads::testSetLock ( write_pos_,1 );
-  // assumed that there is only one reader who can't have called clear and get at the same time.
-  // here get would return garbage.
-  ArchThreads::testSetLock ( read_pos_,0 );
+  ScopeIRQSpinLock lock(lock_);
+  write_pos_ = 1;
+  read_pos_ = 0;
 }
 
 template <class T>
 bool RingBuffer<T>::get ( T &c )
 {
+  ScopeIRQSpinLock lock(lock_);
   uint32 new_read_pos = ( read_pos_ + 1 ) % buffer_size_;
   if ( write_pos_ == new_read_pos ) //nothing new to read
     return false;
   c = buffer_[new_read_pos];
-  ArchThreads::testSetLock ( read_pos_,new_read_pos );
+  read_pos_ = new_read_pos;
   return true;
 }
 

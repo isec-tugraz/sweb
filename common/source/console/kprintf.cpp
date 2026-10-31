@@ -56,9 +56,8 @@ void kprintf_init()
 
 void kprintf_func(int ch, void *arg __attribute__((unused)))
 {
-  //check if atomar or not in current context
-  if ((ArchInterrupts::testIFSet() && Scheduler::instance()->isSchedulingEnabled())
-      || (main_console->areLocksFree() && main_console->getActiveTerminal()->isLockFree()))
+  // Interrupt handlers defer output instead of attempting to take the terminal's mutexes.
+  if (system_state != RUNNING || (ArchInterrupts::testIFSet() && Scheduler::instance()->isSchedulingEnabled()))
   {
     main_console->getActiveTerminal()->write(ch);
   }
@@ -84,9 +83,15 @@ void kprintfd_func(int ch, void *arg __attribute__((unused)))
 
 void kprintfd(const char *fmt, ...)
 {
+  static IRQSpinLock output_lock;
+  // Panic diagnostics run after stopping the other CPUs, including a possible lock holder.
+  bool locked = system_state == RUNNING;
+  bool interrupts_enabled = locked ? output_lock.acquire() : false;
   va_list args;
 
   va_start(args, fmt);
   kvprintf(fmt, kprintfd_func, 0, 10, args);
   va_end(args);
+  if (locked)
+    output_lock.release(interrupts_enabled);
 }

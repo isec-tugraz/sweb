@@ -2,6 +2,7 @@ name: Build and boot
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -27,7 +28,7 @@ jobs:
   build-and-boot:
     name: ${{ matrix.architecture }} build and boot
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

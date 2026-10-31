@@ -67,15 +67,6 @@ class Console : public Thread
     void lockConsoleForDrawing();
     void unLockConsoleForDrawing();
 
-    /**
-     * Checks if all Console locks are free.
-     * @return true if all locks are free
-     */
-    bool areLocksFree()
-    {
-      return (!(system_state == RUNNING) || (console_lock_.isFree() && locked_for_drawing_ == 0));
-    }
-
   protected:
 
     /**
@@ -97,7 +88,6 @@ class Console : public Thread
     ustl::list<Terminal* > terminals_;
     Mutex console_lock_;
     Mutex set_active_lock_;
-    uint8 locked_for_drawing_;
 
     uint32 active_terminal_;
 

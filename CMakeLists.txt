@@ -79,6 +79,14 @@ endif()
 set(LIBRARY_OUTPUT_PATH  "${PROJECT_BINARY_DIR}/lib")
 set(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}")
 
+if(ARCH STREQUAL "x86/64" OR ARCH MATCHES "arm")
+  set(QEMU_CPUS 4 CACHE STRING "Number of CPUs for QEMU")
+else()
+  set(QEMU_CPUS 1 CACHE STRING "Number of CPUs for QEMU")
+endif()
+if(ARCH MATCHES "arm" AND NOT QEMU_CPUS STREQUAL "4")
+  message(FATAL_ERROR "The Raspberry Pi QEMU boards require four CPUs; use the 4core target.")
+endif()
 include(arch/${ARCH}/CMakeLists.include)
 include(arch/${ARCH}/CMakeLists.userspace)
 string (REPLACE ";" " " KERNEL_CMAKE_C_FLAGS_STR "${KERNEL_CMAKE_C_FLAGS}")
@@ -300,8 +308,17 @@ add_custom_target(debug
     COMMAND make clean
     COMMAND ${PROJECT_SOURCE_DIR}/utils/prompt.sh "rm -fR ${PROJECT_BINARY_DIR}/*: remove all arguments recursively [Y/n]? "
     COMMAND rm -fR ${PROJECT_BINARY_DIR}/* || true
-    COMMAND cmake -DDEBUG=1 -DARCH=${ARCH} ${PROJECT_SOURCE_DIR} ${CMAKE_CROSS_COMPILE_FLAGS}
+    COMMAND cmake -DDEBUG=1 -DARCH=${ARCH} -DQEMU_CPUS=${QEMU_CPUS} ${PROJECT_SOURCE_DIR} ${CMAKE_CROSS_COMPILE_FLAGS}
 )
+
+foreach(cores 1 2 4 8)
+  add_custom_target(${cores}core
+    COMMAND "${CMAKE_COMMAND}" -DCORES=${cores} -DARCH=${ARCH} "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}"
+            -P "${PROJECT_SOURCE_DIR}/cmake/SetCoreCount.cmake"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
+    VERBATIM
+  )
+endforeach()
 
 
 # Define the "make ${ARCH}" targets

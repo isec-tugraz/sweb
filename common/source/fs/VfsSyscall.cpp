@@ -18,6 +18,12 @@
 #include "Thread.h"
 #endif
 
+#include "Mutex.h"
+#include "ScopeLock.h"
+
+// Keep lookup, use and deletion in one critical section, including file descriptor lifetimes.
+static Mutex vfs_lock("VfsSyscall::vfs_lock");
+
 #define SEPARATOR '/'
 #define CHAR_DOT '.'
 
@@ -29,6 +35,7 @@ FileDescriptor* VfsSyscall::getFileDescriptor(uint32 fd)
 
 int32 VfsSyscall::mkdir(const char* pathname, int32)
 {
+  ScopeLock lock(vfs_lock);
   debug(VFSSYSCALL, "(mkdir) Path: %s\n", pathname);
   FileSystemInfo *fs_info = getcwd();
 
@@ -91,6 +98,7 @@ static const char* readdirPrefix(uint32 inode_type)
 
 Dirent* VfsSyscall::readdir(const char* pathname, char* buffer, size_t size)
 {
+  ScopeLock lock(vfs_lock);
   FileSystemInfo *fs_info = getcwd();
 
   Path target_path;
@@ -146,6 +154,7 @@ Dirent* VfsSyscall::readdir(const char* pathname, char* buffer, size_t size)
 
 int32 VfsSyscall::chdir(const char* pathname)
 {
+  ScopeLock lock(vfs_lock);
   debug(VFSSYSCALL, "(chdir) Changing working directory to: %s\n", pathname);
 
   FileSystemInfo *fs_info = getcwd();
@@ -171,6 +180,7 @@ int32 VfsSyscall::chdir(const char* pathname)
 
 int32 VfsSyscall::rm(const char* pathname)
 {
+  ScopeLock lock(vfs_lock);
   debug(VFSSYSCALL, "(rm) Removing: %s\n", pathname);
 
   FileSystemInfo *fs_info = getcwd();
@@ -210,6 +220,7 @@ int32 VfsSyscall::rm(const char* pathname)
 
 int32 VfsSyscall::rmdir(const char* pathname)
 {
+  ScopeLock lock(vfs_lock);
   FileSystemInfo *fs_info = getcwd();
 
   Path target_dir;
@@ -253,6 +264,7 @@ int32 VfsSyscall::rmdir(const char* pathname)
 
 int32 VfsSyscall::close(uint32 fd)
 {
+  ScopeLock lock(vfs_lock);
   debug(VFSSYSCALL, "(close) Close fd num %u\n", fd);
   FileDescriptor* file_descriptor = getFileDescriptor(fd);
 
@@ -271,6 +283,7 @@ int32 VfsSyscall::close(uint32 fd)
 
 int32 VfsSyscall::open(const char* pathname, uint32 flag)
 {
+  ScopeLock lock(vfs_lock);
   if(!pathname)
   {
     debug(VFSSYSCALL, "(open) Invalid pathname\n");
@@ -373,6 +386,7 @@ int32 VfsSyscall::open(const char* pathname, uint32 flag)
 
 int32 VfsSyscall::read(uint32 fd, char* buffer, uint32 count)
 {
+  ScopeLock lock(vfs_lock);
   FileDescriptor* file_descriptor = getFileDescriptor(fd);
 
   if (file_descriptor == 0)
@@ -389,6 +403,7 @@ int32 VfsSyscall::read(uint32 fd, char* buffer, uint32 count)
 
 int32 VfsSyscall::write(uint32 fd, const char *buffer, uint32 count)
 {
+  ScopeLock lock(vfs_lock);
   FileDescriptor* file_descriptor = getFileDescriptor(fd);
 
   if (file_descriptor == 0)
@@ -405,6 +420,7 @@ int32 VfsSyscall::write(uint32 fd, const char *buffer, uint32 count)
 
 l_off_t VfsSyscall::lseek(uint32 fd, l_off_t offset, uint8 origin)
 {
+  ScopeLock lock(vfs_lock);
   FileDescriptor* file_descriptor = getFileDescriptor(fd);
 
   if (file_descriptor == 0)
@@ -418,6 +434,7 @@ l_off_t VfsSyscall::lseek(uint32 fd, l_off_t offset, uint8 origin)
 
 int32 VfsSyscall::flush(uint32 fd)
 {
+  ScopeLock lock(vfs_lock);
   FileDescriptor* file_descriptor = getFileDescriptor(fd);
 
   if (file_descriptor == 0)
@@ -432,6 +449,7 @@ int32 VfsSyscall::flush(uint32 fd)
 #ifndef EXE2MINIXFS
 int32 VfsSyscall::mount(const char *device_name, const char *dir_name, const char *file_system_name, int32 flag)
 {
+  ScopeLock lock(vfs_lock);
   FileSystemType* type = vfs.getFsType(file_system_name);
   if (!type)
   {
@@ -444,12 +462,14 @@ int32 VfsSyscall::mount(const char *device_name, const char *dir_name, const cha
 
 int32 VfsSyscall::umount(const char *dir_name, int32 flag)
 {
+  ScopeLock lock(vfs_lock);
   return vfs.umount(dir_name, flag);
 }
 #endif
 
 uint32 VfsSyscall::getFileSize(uint32 fd)
 {
+  ScopeLock lock(vfs_lock);
   FileDescriptor* file_descriptor = getFileDescriptor(fd);
 
   if (file_descriptor == 0)

@@ -10,14 +10,14 @@
 #include "assert.h"
 #include "Bitmap.h"
 
-PageManager pm;
+static uint8 page_manager_storage[sizeof(PageManager)] __attribute__((aligned(__alignof__(PageManager))));
 
 PageManager* PageManager::instance_ = nullptr;
 
 PageManager* PageManager::instance()
 {
   if (unlikely(!instance_))
-    new (&pm) PageManager();
+    new (page_manager_storage) PageManager();
   return instance_;
 }
 
@@ -104,6 +104,9 @@ PageManager::PageManager() : lock_("PageManager::lock_")
   }
 
   size_t num_pages_for_bitmap = (number_of_pages_ / 8) / PAGE_SIZE + 1;
+#ifdef CMAKE_X86_64
+  Bitmap::setBit(page_usage_table, used_pages, 8); // Physical 0x8000: secondary-CPU real-mode entry.
+#endif
   assert(used_pages < number_of_pages_/2 && "No space for kernel heap!");
 
   HEAP_PAGES = number_of_pages_/2 - used_pages;
@@ -124,8 +127,7 @@ PageManager::PageManager() : lock_("PageManager::lock_")
     start_vpn++;
   }
 
-  extern KernelMemoryManager kmm;
-  new (&kmm) KernelMemoryManager(num_reserved_heap_pages,HEAP_PAGES);
+  KernelMemoryManager::initialize(num_reserved_heap_pages, HEAP_PAGES);
   page_usage_table_ = new Bitmap(number_of_pages_);
 
   for (size_t i = 0; i < boot_bitmap_size; ++i)

@@ -7,6 +7,8 @@
 #include "ProcessRegistry.h"
 #include "File.h"
 #include "Scheduler.h"
+#include "uvector.h"
+#include "kstring.h"
 
 size_t Syscall::syscallException(size_t syscall_number, size_t arg1, size_t arg2, size_t arg3, size_t arg4, size_t arg5)
 {
@@ -58,11 +60,19 @@ size_t Syscall::syscallException(size_t syscall_number, size_t arg1, size_t arg2
 
 void Syscall::pseudols(const char *pathname, char *buffer, size_t size)
 {
-  if(buffer && ((size_t)buffer >= USER_BREAK || (size_t)buffer + size > USER_BREAK))
+  if(buffer && ((size_t)buffer >= USER_BREAK || size > USER_BREAK - (size_t)buffer || size == 0))
     return;
   if((size_t)pathname >= USER_BREAK)
     return;
-  VfsSyscall::readdir(pathname, buffer, size);
+  ustl::string path(pathname); // User memory may fault; copy before acquiring the VFS mutex.
+  if (!buffer)
+  {
+    VfsSyscall::readdir(path.c_str());
+    return;
+  }
+  ustl::vector<char> entries(size);
+  VfsSyscall::readdir(path.c_str(), entries.data(), size);
+  memcpy(buffer, entries.data(), strlen(entries.data()) + 1);
 }
 
 void Syscall::exit(size_t exit_code)
@@ -75,7 +85,7 @@ void Syscall::exit(size_t exit_code)
 size_t Syscall::write(size_t fd, pointer buffer, size_t size)
 {
   //WARNING: this might fail if Kernel PageFaults are not handled
-  if ((buffer >= USER_BREAK) || (buffer + size > USER_BREAK))
+  if ((buffer >= USER_BREAK) || (size > USER_BREAK - buffer))
   {
     return -1U;
   }
@@ -90,14 +100,16 @@ size_t Syscall::write(size_t fd, pointer buffer, size_t size)
   }
   else
   {
-    num_written = VfsSyscall::write(fd, (char*) buffer, size);
+    ustl::vector<char> data(size);
+    memcpy(data.data(), (const void*)buffer, size);
+    num_written = VfsSyscall::write(fd, data.data(), size);
   }
   return num_written;
 }
 
 size_t Syscall::read(size_t fd, pointer buffer, size_t count)
 {
-  if ((buffer >= USER_BREAK) || (buffer + count > USER_BREAK))
+  if ((buffer >= USER_BREAK) || (count > USER_BREAK - buffer))
   {
     return -1U;
   }
@@ -112,7 +124,11 @@ size_t Syscall::read(size_t fd, pointer buffer, size_t count)
   }
   else
   {
-    num_read = VfsSyscall::read(fd, (char*) buffer, count);
+    ustl::vector<char> data(count);
+    ssize_t result = VfsSyscall::read(fd, data.data(), count);
+    if (result > 0)
+      memcpy((void*)buffer, data.data(), result);
+    num_read = result;
   }
   return num_read;
 }
@@ -128,7 +144,8 @@ size_t Syscall::open(size_t path, size_t flags)
   {
     return -1U;
   }
-  return VfsSyscall::open((char*) path, flags);
+  ustl::string filename((const char*)path);
+  return VfsSyscall::open(filename.c_str(), flags);
 }
 
 void Syscall::outline(size_t port, pointer text)
@@ -156,7 +173,8 @@ size_t Syscall::createprocess(size_t path, size_t sleep)
   }
 
   debug(SYSCALL, "Syscall::createprocess: path:%s sleep:%zd\n", (char*) path, sleep);
-  ssize_t fd = VfsSyscall::open((const char*) path, O_RDONLY);
+  ustl::string filename((const char*)path);
+  ssize_t fd = VfsSyscall::open(filename.c_str(), O_RDONLY);
   if (fd == -1)
   {
     return -1U;
@@ -165,7 +183,7 @@ size_t Syscall::createprocess(size_t path, size_t sleep)
   // parameter check end
 
   size_t process_count = ProcessRegistry::instance()->processCount();
-  ProcessRegistry::instance()->createProcess((const char*) path);
+  ProcessRegistry::instance()->createProcess(filename.c_str());
   if (sleep)
   {
     while (ProcessRegistry::instance()->processCount() > process_count) // please note that this will fail ;)

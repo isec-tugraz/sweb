@@ -138,7 +138,9 @@ extern "C" void exceptionHandler(uint32 type)
 {
   assert(!currentThread || currentThread->isStackCanaryOK());
   debug(A_INTERRUPTS, "InterruptUtils::exceptionHandler: type = %x\n", type);
-  assert((currentThreadRegisters->cpsr & (0xE0)) == 0);
+  // The sleep/unlock handoff yields from system mode with interrupts still disabled.
+  assert((currentThreadRegisters->cpsr & 0xE0) == 0 ||
+         (type == ARM4_XRQ_SWINT && (currentThreadRegisters->cpsr & 0x3F) == 0x1F));
   if (!currentThread)
   {
     Scheduler::instance()->schedule();
@@ -168,7 +170,8 @@ extern "C" void exceptionHandler(uint32 type)
   }
 //  ArchThreads::printThreadRegisters(currentThread,false);
   assert((currentThreadRegisters->ttbr0 & 0x3FFF) == 0 && (currentThreadRegisters->ttbr0 & ~0x3FFF) != 0);
-  assert((currentThreadRegisters->cpsr & 0xE0) == 0);
+  // A sleeping kernel thread restores its previous interrupt state after resuming.
+  assert((currentThreadRegisters->cpsr & 0xE0) == 0 || (currentThreadRegisters->cpsr & 0x3F) == 0x1F);
   assert(currentThread->switch_to_userspace_ == 0 || (currentThreadRegisters->cpsr & 0xF) == 0);
   assert(!currentThread || currentThread->isStackCanaryOK());
   switchTTBR0(currentThreadRegisters->ttbr0);

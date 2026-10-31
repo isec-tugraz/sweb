@@ -15,7 +15,8 @@
 
 extern Stabs2DebugInfo const* kernel_debug_info;
 
-KernelMemoryManager kmm;
+static uint8 kernel_memory_manager_storage[sizeof(KernelMemoryManager)]
+    __attribute__((aligned(__alignof__(KernelMemoryManager))));
 
 KernelMemoryManager * KernelMemoryManager::instance_;
 size_t KernelMemoryManager::pm_ready_;
@@ -27,6 +28,11 @@ KernelMemoryManager* KernelMemoryManager::instance()
     assert(false && "you can not use KernelMemoryManager::instance before the PageManager is ready!");
   }
   return instance_;
+}
+
+void KernelMemoryManager::initialize(size_t min_heap_pages, size_t max_heap_pages)
+{
+  new (kernel_memory_manager_storage) KernelMemoryManager(min_heap_pages, max_heap_pages);
 }
 
 KernelMemoryManager::KernelMemoryManager(size_t min_heap_pages, size_t max_heap_pages) :

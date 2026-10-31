@@ -14,19 +14,17 @@
 #include "ustring.h"
 #include "Lock.h"
 
-ArchThreadRegisters *currentThreadRegisters;
-Thread *currentThread;
+__cpu ArchThreadRegisters *currentThreadRegisters;
+__cpu Thread *currentThread;
 
-Scheduler *Scheduler::instance_ = nullptr;
+__cpu Scheduler Scheduler::scheduler_;
 
 Scheduler *Scheduler::instance()
 {
-  if (unlikely(!instance_))
-    instance_ = new Scheduler();
-  return instance_;
+  return &scheduler_;
 }
 
-Scheduler::Scheduler()
+Scheduler::Scheduler() : incoming_lock_("Scheduler::incoming_lock_")
 {
   block_scheduling_ = 0;
   ticks_ = 0;
@@ -37,6 +35,7 @@ Scheduler::Scheduler()
 
 void Scheduler::schedule()
 {
+  assert(this == instance());
   assert(!ArchInterrupts::testIFSet() && "Tried to schedule with Interrupts enabled");
   if (block_scheduling_)
   {
@@ -52,6 +51,7 @@ void Scheduler::schedule()
   auto it = threads_.begin();
   for(; it != threads_.end(); ++it)
   {
+    assert((*it)->scheduler_ == this);
     if((*it)->schedulable())
     {
       currentThread = *it;
@@ -71,25 +71,60 @@ void Scheduler::addNewThread(Thread *thread)
   debug(SCHEDULER, "addNewThread: %p  %zd:%s\n", thread, thread->getTID(), thread->getName());
   if (currentThread)
     ArchThreads::debugCheckNewThread(thread);
+  if (this != instance())
+  {
+    ScopeLock lock(incoming_lock_);
+    assert(!thread->scheduler_ && "Thread already belongs to a scheduler");
+    thread->scheduler_ = this;
+    incoming_threads_.push_back(thread);
+    return;
+  }
   KernelMemoryManager::instance()->getKMMLock().acquire();
   lockScheduling();
   KernelMemoryManager::instance()->getKMMLock().release();
+  assert(!thread->scheduler_ && "Thread already belongs to a scheduler");
+  thread->scheduler_ = this;
   threads_.push_back(thread);
   unlockScheduling();
 }
 
-void Scheduler::sleep()
+void Scheduler::receiveThreads()
 {
-  currentThread->setState(Sleeping);
+  assert(this == instance());
+  ScopeLock lock(incoming_lock_);
+  if (incoming_threads_.empty())
+    return;
+  KernelMemoryManager::instance()->getKMMLock().acquire();
+  lockScheduling();
+  KernelMemoryManager::instance()->getKMMLock().release();
+  for (Thread* thread : incoming_threads_)
+  {
+    assert(thread->scheduler_ == this);
+    threads_.push_back(thread);
+  }
+  incoming_threads_.clear();
+  unlockScheduling();
+}
+
+void Scheduler::sleep(Lock* waiters_lock)
+{
+  assert(this == instance() && currentThread->scheduler_ == this);
   assert(block_scheduling_ == 0);
-  yield();
+  // A timer must not switch threads between marking us sleeping and releasing the waiters list.
+  bool interrupts_enabled = ArchInterrupts::disableInterrupts();
+  currentThread->setState(Sleeping);
+  if (waiters_lock)
+    waiters_lock->unlockWaitersList();
+  ArchThreads::yield();
+  if (interrupts_enabled)
+    ArchInterrupts::enableInterrupts();
 }
 
 void Scheduler::wake(Thread* thread_to_wake)
 {
-  // wait until the thread is sleeping
-  while(thread_to_wake->getState() != Sleeping)
-    yield();
+  // The thread stays in its owner's list; another CPU may mark it runnable here.
+  assert(thread_to_wake->scheduler_);
+  assert(thread_to_wake->getState() == Sleeping && "Thread must be sleeping before it can be woken");
   thread_to_wake->setState(Running);
 }
 
@@ -122,8 +157,11 @@ void Scheduler::cleanupDeadThreads()
   for (uint32 i = 0; i < threads_.size() && thread_count < thread_count_max; ++i)
   {
     Thread* tmp = threads_[i];
+    assert(tmp->scheduler_ == this);
     if (tmp->getState() == ToBeDestroyed)
     {
+      // Only this CPU can run or clean up its threads, so the old stack is no longer in use.
+      assert(tmp != currentThread && !tmp->holding_lock_list_ && !tmp->lock_waiting_on_);
       destroy_list[thread_count++] = tmp;
       threads_.erase(threads_.begin() + i); // Note: erase will not realloc!
       --i;
@@ -148,12 +186,13 @@ void Scheduler::printThreadList()
   debug(SCHEDULER, "Scheduler::printThreadList: %zd Threads in List\n", threads_.size());
   for (size_t c = 0; c < threads_.size(); ++c)
     debug(SCHEDULER, "Scheduler::printThreadList: threads_[%zd]: %p  %zd:%25s     [%s]\n", c, threads_[c],
-          threads_[c]->getTID(), threads_[c]->getName(), Thread::threadStatePrintable[threads_[c]->state_]);
+          threads_[c]->getTID(), threads_[c]->getName(), Thread::threadStatePrintable[threads_[c]->getState()]);
   unlockScheduling();
 }
 
 void Scheduler::lockScheduling() //not as severe as stopping Interrupts
 {
+  assert(this == instance() && "Scheduler lists may only be changed on their owning CPU");
   if (unlikely(ArchThreads::testSetLock(block_scheduling_, 1)))
     kpanict("FATAL ERROR: Scheduler::*: block_scheduling_ was set !! How the Hell did the program flow get here then ?\n");
 }
@@ -211,9 +250,7 @@ void Scheduler::printLockingInformation()
   }
   for(Thread* t : threads_)
   {
-    if(t->lock_waiting_on_)
-      debug(LOCK, "Thread %s (%p) is waiting on lock: %s (%p).\n",
-            t->getName(), t, t->lock_waiting_on_ ->getName(), t->lock_waiting_on_ );
+    Lock::printWaitingOn(t);
   }
   debug(LOCK, "Scheduler::printLockingInformation finished\n");
   unlockScheduling();

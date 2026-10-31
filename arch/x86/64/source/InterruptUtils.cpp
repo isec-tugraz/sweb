@@ -29,7 +29,7 @@
 #include "paging-definitions.h"
 #include "PageFaultHandler.h"
 
-#include "8259.h"
+#include "APIC.h"
 
 #define LO_WORD(x) (((uint32)(x)) & 0x0000FFFFULL)
 #define HI_WORD(x) ((((uint32)(x)) >> 16) & 0x0000FFFFULL)
@@ -82,8 +82,8 @@ struct GateDesc
 extern "C" void arch_dummyHandler();
 extern "C" void arch_dummyHandlerMiddle();
 
-uint64 InterruptUtils::pf_address;
-uint64 InterruptUtils::pf_address_counter;
+__cpu uint64 InterruptUtils::pf_address = 0xdeadbeef;
+__cpu uint64 InterruptUtils::pf_address_counter;
 
 void InterruptUtils::initialise()
 {
@@ -157,8 +157,8 @@ extern SWEBDebugInfo const *kernel_debug_info;
 
 extern "C" void arch_contextSwitch();
 
-extern ArchThreadRegisters *currentThreadRegisters;
-extern Thread *currentThread;
+extern __cpu ArchThreadRegisters *currentThreadRegisters;
+extern __cpu Thread *currentThread;
 
 extern "C" void arch_irqHandler_0();
 extern "C" void irqHandler_0()
@@ -176,6 +176,12 @@ extern "C" void irqHandler_0()
 }
 
 extern "C" void arch_irqHandler_65();
+extern "C" void arch_irqHandler_127();
+extern "C" void irqHandler_127()
+{
+  // A spurious APIC interrupt has no in-service entry and must not receive an EOI.
+}
+
 extern "C" void irqHandler_65()
 {
   Scheduler::instance()->schedule();

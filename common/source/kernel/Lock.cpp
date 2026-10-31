@@ -6,7 +6,11 @@
 #include "ArchInterrupts.h"
 #include "Scheduler.h"
 #include "Stabs2DebugInfo.h"
+#include "IRQSpinLock.h"
 extern Stabs2DebugInfo const* kernel_debug_info;
+
+// Protect the diagnostic lists across CPUs without using the locks being diagnosed.
+static IRQSpinLock debug_lock;
 
 Lock::Lock(const char *name) :
   held_by_(0),
@@ -44,6 +48,7 @@ Lock::~Lock()
 
 void Lock::printWaitersList()
 {
+  ScopeIRQSpinLock lock(debug_lock);
   debug(LOCK, "Threads waiting for lock %s (%p), newest thread waiting first:\n", name_, this);
   size_t count = 0;
   for(Thread* thread = waiters_list_; thread != 0; thread = thread->next_thread_in_lock_waiters_list_)
@@ -54,6 +59,7 @@ void Lock::printWaitersList()
 
 void Lock::printHoldingList(Thread* thread)
 {
+  ScopeIRQSpinLock lock(debug_lock);
   debug(LOCK, "Locks held by thread %s (%p):",
         thread->getName(), thread);
   for(Lock* lock = thread->holding_lock_list_; lock != 0; lock = lock->next_lock_on_holding_list_)
@@ -62,19 +68,31 @@ void Lock::printHoldingList(Thread* thread)
   }
 }
 
-void Lock::pushFrontToCurrentThreadHoldingList()
+void Lock::recordAcquisition(pointer called_by)
 {
+  ScopeIRQSpinLock lock(debug_lock);
+  assert(!held_by_);
+  __atomic_store_n(&last_accessed_at_, called_by, __ATOMIC_RELAXED);
+  __atomic_store_n(&held_by_, currentThread, __ATOMIC_RELEASE);
   if(!currentThread)
     return;
   next_lock_on_holding_list_ = currentThread->holding_lock_list_;
   ArchThreads::atomic_set((pointer&)(currentThread->holding_lock_list_), (pointer)this);
 }
 
+void Lock::printWaitingOn(Thread* thread)
+{
+  ScopeIRQSpinLock lock(debug_lock);
+  if (thread->lock_waiting_on_)
+    debug(LOCK, "Thread %s (%p) is waiting on lock: %s (%p).\n",
+          thread->getName(), thread, thread->lock_waiting_on_->getName(), thread->lock_waiting_on_);
+}
+
 
 void Lock::printStatus()
 {
   Thread *thread = held_by_;
-  pointer last_accessed_at = last_accessed_at_;
+  pointer last_accessed_at = __atomic_load_n(&last_accessed_at_, __ATOMIC_RELAXED);
   if(!last_accessed_at && !thread)
   {
     debug(LOCK, "Lock %s (%p) probably has not been used yet.\n", getName(), this);
@@ -98,6 +116,7 @@ void Lock::printStatus()
 
 void Lock::checkForDeadLock()
 {
+  ScopeIRQSpinLock lock(debug_lock);
   if(!currentThread)
     return;
   if(held_by_ == currentThread)
@@ -110,8 +129,11 @@ void Lock::checkForDeadLock()
   checkForCircularDeadLock(currentThread, this);
 }
 
-void Lock::removeFromCurrentThreadHoldingList()
+void Lock::recordRelease(pointer called_by)
 {
+  ScopeIRQSpinLock lock(debug_lock);
+  __atomic_store_n(&last_accessed_at_, called_by, __ATOMIC_RELAXED);
+  __atomic_store_n(&held_by_, (Thread*)nullptr, __ATOMIC_RELEASE);
   if(!currentThread)
     return;
   if(currentThread->holding_lock_list_ == this)
@@ -136,6 +158,7 @@ void Lock::removeFromCurrentThreadHoldingList()
 
 void Lock::checkCurrentThreadStillWaitingOnAnotherLock()
 {
+  ScopeIRQSpinLock lock(debug_lock);
   if(!currentThread)
     return;
   if(currentThread->lock_waiting_on_ != 0)
@@ -147,7 +170,7 @@ void Lock::checkCurrentThreadStillWaitingOnAnotherLock()
     if(kernel_debug_info)
     {
       debug(LOCK, "The other lock has been acquired by ");
-      kernel_debug_info->printCallInformation(currentThread->lock_waiting_on_->last_accessed_at_);
+      kernel_debug_info->printCallInformation(__atomic_load_n(&currentThread->lock_waiting_on_->last_accessed_at_, __ATOMIC_RELAXED));
     }
     assert(false);
   }
@@ -167,9 +190,7 @@ void Lock::doChecksBeforeWaiting()
 
 void Lock::checkForCircularDeadLock(Thread* thread_waiting, Lock* start)
 {
-  // Check all locks which are held by the target thread.
-  // This can be done, because we know that the list may not be modified
-  // (accept of an atomic push front, which does not matter at all)
+  // The diagnostic lock keeps holding and waiting lists stable throughout this traversal.
   for(Lock* lock = thread_waiting->holding_lock_list_; lock != 0; lock = lock->next_lock_on_holding_list_)
   {
     // In case a thread which is indirectly waiting for the current thread
@@ -208,7 +229,7 @@ void Lock::printOutCircularDeadLock(Thread* starting)
     if(kernel_debug_info)
     {
       debug(LOCK, "This lock has been locked at ");
-      kernel_debug_info->printCallInformation(lock->last_accessed_at_);
+      kernel_debug_info->printCallInformation(__atomic_load_n(&lock->last_accessed_at_, __ATOMIC_RELAXED));
     }
     // In the thread we are looking at is the current one, we have to stop.
     // It would result in an endless loop (circular print out ^^).
@@ -244,13 +265,16 @@ void Lock::lockWaitersList()
 
 void Lock::unlockWaitersList()
 {
-  waiters_list_lock_ = 0;
+  ArchThreads::atomic_set(waiters_list_lock_, 0);
 }
 
 void Lock::pushFrontCurrentThreadToWaitersList()
 {
+  ScopeIRQSpinLock lock(debug_lock);
   assert(currentThread);
   assert(waitersListIsLocked());
+  checkForCircularDeadLock(currentThread, this);
+  currentThread->lock_waiting_on_ = this;
   currentThread->next_thread_in_lock_waiters_list_ = waiters_list_;
   // the following set has to be atomic
   // waiters_list_ = currentThread;
@@ -259,6 +283,7 @@ void Lock::pushFrontCurrentThreadToWaitersList()
 
 Thread* Lock::popBackThreadFromWaitersList()
 {
+  ScopeIRQSpinLock lock(debug_lock);
   assert(waitersListIsLocked());
   Thread* thread = 0;
   if(waiters_list_ == 0)
@@ -284,11 +309,17 @@ Thread* Lock::popBackThreadFromWaitersList()
     // remove the last element
     ArchThreads::atomic_set((pointer&)(previous->next_thread_in_lock_waiters_list_), (pointer)(0));
   }
+  if (thread)
+  {
+    thread->lock_waiting_on_ = nullptr;
+    thread->next_thread_in_lock_waiters_list_ = nullptr;
+  }
   return thread;
 }
 
 void Lock::removeCurrentThreadFromWaitersList()
 {
+  ScopeIRQSpinLock lock(debug_lock);
   if(!currentThread)
     return;
   assert(waitersListIsLocked());
@@ -314,11 +345,13 @@ void Lock::removeCurrentThreadFromWaitersList()
     }
   }
   ArchThreads::atomic_set((pointer&)(currentThread->next_thread_in_lock_waiters_list_ ), (pointer)0);
+  currentThread->lock_waiting_on_ = nullptr;
   return;
 }
 
 void Lock::checkInvalidRelease(const char* method)
 {
+  ScopeIRQSpinLock lock(debug_lock);
   assert(name_ && "name_ is null, maybe lock was not initialised?");
   if(unlikely(held_by_ != currentThread))
   {
@@ -336,10 +369,6 @@ void Lock::checkInvalidRelease(const char* method)
 
 void Lock::sleepAndRelease ()
 {
-  currentThread->lock_waiting_on_ = this;
   pushFrontCurrentThreadToWaitersList();
-  unlockWaitersList();
-  // we can risk to go to sleep after the list has been unlocked,
-  // because the thread waking this thread waits until it goes to sleep
-  Scheduler::instance()->sleep();
+  Scheduler::instance()->sleep(this);
 }

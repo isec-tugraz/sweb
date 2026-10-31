@@ -2,7 +2,6 @@
 #include "board_constants.h"
 #include "init_boottime_pagetables.h"
 #include "assert.h"
-#include "kstring.h"
 #include "ArchBoardSpecific.h"
 
 extern "C" void __attribute__((naked)) PagingMode();
@@ -24,8 +23,9 @@ extern "C" void __attribute__((naked)) entry()
   void (*disableMulticorePTR)(uint32*) = (void(*)(uint32*))((uint8*)ArchBoardSpecific::disableMulticore + BOOT_OFFSET);
   disableMulticorePTR((uint32 * )(((uint8 * ) & multicore_sync) + BOOT_OFFSET));
 
-  void (*memsetPTR)(void*,uint8,size_t) = (void(*)(void*,uint8,size_t))((uint8*)&memset + BOOT_OFFSET);
-  memsetPTR((void*)(&bss_start_address - BOOT_OFFSET), 0, (uint32)&bss_end_address - (uint32)&bss_start_address);
+  // memset checks the current thread's stack canary through virtual addresses; paging is not enabled yet.
+  for (volatile uint8* byte = &bss_start_address + BOOT_OFFSET; byte < &bss_end_address + BOOT_OFFSET; ++byte)
+    *byte = 0;
 
   void (*initialiseBootTimePagingPTR)() = (void(*)())((uint8*)&initialiseBootTimePaging + BOOT_OFFSET);
   initialiseBootTimePagingPTR();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "cpu_local.h"
 
 typedef struct {
   uint32  number;      // handler number
@@ -25,7 +26,7 @@ public:
 
 private:
   static InterruptHandlers handlers[];
-  static uint64 pf_address;
-  static uint64 pf_address_counter;
+  static __cpu uint64 pf_address;
+  static __cpu uint64 pf_address_counter;
 };
 

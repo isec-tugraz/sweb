@@ -2,6 +2,7 @@
 
 #include "BDDriver.h"
 #include "Mutex.h"
+#include "IRQSpinLock.h"
 
 class BDRequest;
 
@@ -15,13 +16,9 @@ class ATADriver : public BDDriver
     } BD_ATA_MODES;
 
     /**
-     * adds the given request to a list and checkes the type of the
-     * request. If it is a read or write request, it is beeing executed,
-     * or the function returns otherwise.
-     *
+     * Execute one request at a time and wait for completion before releasing the controller.
      */
     uint32 addRequest(BDRequest* br);
-    void nextRequest(BDRequest* br);
     ATADriver(uint16 baseport, uint16 getdrive, uint16 irqnum);
     virtual ~ATADriver()
     {
@@ -81,6 +78,7 @@ class ATADriver : public BDDriver
   private:
 
     int32 selectSector(uint32 start_sector, uint32 num_sectors);
+    void completeRequest(BDRequest* br);
 
     uint32 numsec;
 
@@ -91,8 +89,8 @@ class ATADriver : public BDDriver
 
     BD_ATA_MODES mode; // mode see enum BD_ATA_MODES
 
-    BDRequest *request_list_;
-    BDRequest *request_list_tail_;
+    BDRequest* active_request_ = nullptr;
+    IRQSpinLock request_lock_;
 
     Mutex lock_;
 };

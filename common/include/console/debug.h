@@ -26,7 +26,7 @@ enum AnsiColor
 #endif
 
 #ifndef EXE2MINIXFS
-#define debug(flag, ...) do { if (flag & OUTPUT_ENABLED) { kprintfd(DEBUG_FORMAT_STRING, COLOR_PARAM(flag)); kprintfd(__VA_ARGS__); } } while (0)
+#define debug(flag, format, ...) do { if (flag & OUTPUT_ENABLED) { kprintfd(DEBUG_FORMAT_STRING format, COLOR_PARAM(flag), ##__VA_ARGS__); } } while (0)
 #endif
 
 

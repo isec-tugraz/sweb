@@ -59,12 +59,10 @@ void Condition::wait(bool re_acquire_mutex, pointer called_by)
     assert(!currentThread->holding_lock_list_->hasNextOnHoldingList() && "thread is holding unrelated locks while waiting on a condition variable");
   }
   lockWaitersList();
-  last_accessed_at_ = called_by;
+  __atomic_store_n(&last_accessed_at_, called_by, __ATOMIC_RELAXED);
   // The mutex can be released here, because for waking up another thread, the list lock is needed, which is still held by the thread.
   mutex_->release(called_by);
   sleepAndRelease();
-  // Thread has been woken up again
-  currentThread->lock_waiting_on_ = 0;
 
   if(re_acquire_mutex)
   {
@@ -93,7 +91,7 @@ void Condition::signal(pointer called_by, bool broadcast)
   do
   {
     lockWaitersList();
-    last_accessed_at_ = called_by;
+    __atomic_store_n(&last_accessed_at_, called_by, __ATOMIC_RELAXED);
     Thread* thread_to_be_woken_up = popBackThreadFromWaitersList();
     unlockWaitersList();
 

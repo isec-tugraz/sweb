@@ -5,7 +5,6 @@
 #include "ArchInterrupts.h"
 #include "ArchThreads.h"
 #include "kprintf.h"
-#include "8259.h"
 
 
 SerialPort::SerialPort ( char *name, ArchSerialInfo port_info ) : CharacterDevice( name )

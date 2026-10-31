@@ -106,7 +106,10 @@ extern "C" void exceptionHandler(size_t int_id , size_t curr_el NU, size_t exc_s
 
   assert(!currentThread || currentThread->isStackCanaryOK());
   debug(A_INTERRUPTS, "InterruptUtils::exceptionHandler: type = %zx\n", type);
-  assert((currentThreadRegisters->SPSR & (0xE0)) == 0); //check if interrupts disabled
+  // The sleep/unlock handoff yields from EL1h with interrupts still disabled.
+  assert((currentThreadRegisters->SPSR & 0xE0) == 0 ||
+         (type == ARM_EXC_SYNC && exception_class == ARM_EXC_CLA_SYSCALL &&
+          (currentThreadRegisters->SPSR & 0x1F) == 0x5));
 
   if (type == ARM_EXC_IRQ)
   {
@@ -138,7 +141,8 @@ extern "C" void exceptionHandler(size_t int_id , size_t curr_el NU, size_t exc_s
     for(;;);
   }
 
-  assert((currentThreadRegisters->SPSR & 0xE0) == 0);
+  // A sleeping kernel thread restores its previous interrupt state after resuming.
+  assert((currentThreadRegisters->SPSR & 0xE0) == 0 || (currentThreadRegisters->SPSR & 0x1F) == 0x5);
   assert(currentThread->switch_to_userspace_ == 0 || (currentThreadRegisters->SPSR & 0xF) == 0);
   assert(!currentThread || currentThread->isStackCanaryOK());
 }

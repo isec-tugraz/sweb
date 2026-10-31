@@ -30,8 +30,7 @@
   movw %ax,%ss
   movw %ax,%ds
   movw %ax,%es
-  movw %ax,%fs
-  movw %ax,%gs
+  # Keep FS unchanged: it holds the kernel CPU-local storage base.
 .endm
 
 .macro popAll
@@ -155,7 +154,7 @@ arch_pageFaultHandler:
         hlt
 
 
-.irp num,0,1,3,4,6,9,11,14,15,65
+.irp num,0,1,3,4,6,9,11,14,15,65,127
 irqhandler \num
 .endr
 

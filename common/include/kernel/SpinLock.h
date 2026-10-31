@@ -28,12 +28,6 @@ public:
 
   void release(pointer called_by = 0);
 
-  /**
-   * allows you to check if the SpinLock is set or not.
-   * trust the return value only if the SpinLock can't be acquired or releases
-   * when you're not locking. (= only use in atomic state)
-   */
-  bool isFree();
 
 private:
   /**
