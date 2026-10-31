@@ -2,6 +2,7 @@ name: Build and boot
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
