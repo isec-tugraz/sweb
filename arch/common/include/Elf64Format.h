@@ -83,9 +83,12 @@ class Elf
     static const Elf64_Word PT_NOTE      = 4;
     static const Elf64_Word PT_SHLIB     = 5;
     static const Elf64_Word PT_PHDR      = 6;
-    static const Elf64_Word PT_LOPROC    = 7;
-    static const Elf64_Word PT_HIPROC    = 8;
-    static const Elf64_Word PT_GNU_STACK = 9;
+    static const Elf64_Word PT_TLS       = 7;
+    static const Elf64_Word PT_LOOS      = 0x60000000;
+    static const Elf64_Word PT_HIOS      = 0x6fffffff;
+    static const Elf64_Word PT_LOPROC    = 0x70000000;
+    static const Elf64_Word PT_HIPROC    = 0x7fffffff;
+    static const Elf64_Word PT_GNU_STACK = 0x6474e551;
 
     struct sELF64_Ehdr
     {

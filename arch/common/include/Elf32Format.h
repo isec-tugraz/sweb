@@ -81,9 +81,12 @@ class Elf
     static const Elf32_Word PT_NOTE      = 4;
     static const Elf32_Word PT_SHLIB     = 5;
     static const Elf32_Word PT_PHDR      = 6;
-    static const Elf32_Word PT_LOPROC    = 7;
-    static const Elf32_Word PT_HIPROC    = 8;
-    static const Elf32_Word PT_GNU_STACK = 9;
+    static const Elf32_Word PT_TLS       = 7;
+    static const Elf32_Word PT_LOOS      = 0x60000000;
+    static const Elf32_Word PT_HIOS      = 0x6fffffff;
+    static const Elf32_Word PT_LOPROC    = 0x70000000;
+    static const Elf32_Word PT_HIPROC    = 0x7fffffff;
+    static const Elf32_Word PT_GNU_STACK = 0x6474e551;
 
     struct sELF32_Ehdr
     {
@@ -160,7 +163,7 @@ class Elf
     {
         Elf32_Addr r_offset;
         Elf32_Word r_info;
-        Elf32_Sword r_added;
+        Elf32_Sword r_addend;
     } ELF32_Rela;
 
     struct sELF32_Phdr
