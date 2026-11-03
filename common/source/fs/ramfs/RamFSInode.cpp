@@ -2,7 +2,7 @@
 #include "kstring.h"
 #include "assert.h"
 #include "fs/ramfs/RamFSSuperblock.h"
-#include "fs/ramfs/RamFSFile.h"
+#include "fs/ramfs/RamFSFileHandle.h"
 #include "fs/Dentry.h"
 #include "FileSystemType.h"
 
@@ -62,13 +62,13 @@ int32 RamFSInode::writeData(uint32 offset, uint32 size, const char *buffer)
   return write_size;
 }
 
-File* RamFSInode::open(Dentry* dentry, uint32 flag)
+KernelFileHandle* RamFSInode::open(Dentry* dentry, uint32 flag)
 {
   debug(INODE, "%s Inode: Open file\n", getSuperblock()->getFSType()->getFSName());
   assert(ustl::find(i_dentrys_.begin(), i_dentrys_.end(), dentry) != i_dentrys_.end());
 
-  File* file = (File*) (new RamFSFile(this, dentry, flag));
-  i_files_.push_back(file);
-  getSuperblock()->fileOpened(file);
-  return file;
+  KernelFileHandle* file_handle = (KernelFileHandle*) (new RamFSFileHandle(this, dentry, flag));
+  i_file_handles_.push_back(file_handle);
+  getSuperblock()->fileHandleOpened(file_handle);
+  return file_handle;
 }

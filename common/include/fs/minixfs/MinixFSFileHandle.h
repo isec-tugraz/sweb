@@ -1,8 +1,8 @@
 #pragma once
 
-#include "File.h"
+#include "KernelFileHandle.h"
 
-class MinixFSFile : public File
+class MinixFSFileHandle : public KernelFileHandle
 {
   public:
 
@@ -12,9 +12,9 @@ class MinixFSFile : public File
      * @param dentry the dentry
      * @param flag the flag i.e. readonly
      */
-    MinixFSFile(Inode* inode, Dentry* dentry, uint32 flag);
+    MinixFSFileHandle(Inode* inode, Dentry* dentry, uint32 flag);
 
-    virtual ~MinixFSFile();
+    virtual ~MinixFSFileHandle();
 
     /**
      * reads from the file

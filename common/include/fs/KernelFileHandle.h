@@ -1,12 +1,11 @@
 #pragma once
 
 #include "types.h"
-#include "ulist.h"
 
 class Superblock;
 class Inode;
 class Dentry;
-class FileDescriptor;
+class FileDescriptorTable;
 
 #define O_RDONLY    0x0001
 #define O_WRONLY    0x0002
@@ -31,7 +30,7 @@ class FileDescriptor;
 #endif
 
 
-class File
+class KernelFileHandle
 {
   public:
     uint32 uid;
@@ -71,9 +70,9 @@ class File
     l_off_t offset_;
 
     /**
-     * List of open file descriptors
+     * Number of file descriptors referring to this file
      */
-    ustl::list<FileDescriptor*> f_fds_;
+    size_t file_descriptor_count_;
 
   public:
     /**
@@ -93,12 +92,9 @@ class File
      * @param dentry the files dentry
      * @param flag the files flag
      */
-    File(Inode* inode, Dentry* dentry, uint32 flag);
+    KernelFileHandle(Inode* inode, Dentry* dentry, uint32 flag);
 
-    virtual ~File();
-
-    virtual FileDescriptor* openFd();
-    virtual int closeFd(FileDescriptor* fd);
+    virtual ~KernelFileHandle();
 
 
 
@@ -166,7 +162,7 @@ class File
 
     /**
      * not implemented here
-     * Flush all off the file's write operations. The File will be written to disk.
+     * Flush all off the file's write operations. The file will be written to disk.
      * @return is the error code of the flush operation.
      */
     virtual int32 flush()
@@ -175,4 +171,10 @@ class File
     }
 
     virtual uint32 getSize();
+
+  private:
+    void addFileDescriptor();
+    int closeFileDescriptor();
+
+    friend class FileDescriptorTable;
 };

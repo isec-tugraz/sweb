@@ -4,7 +4,7 @@
 #endif
 #include <assert.h>
 #include "MinixFSSuperblock.h"
-#include "MinixFSFile.h"
+#include "MinixFSFileHandle.h"
 #include "Dentry.h"
 
 MinixFSInode::MinixFSInode(Superblock *super_block, uint32 inode_type) :
@@ -229,14 +229,14 @@ void MinixFSInode::writeDentry(uint32 dest_i_num, uint32 src_i_num, const char* 
 
 }
 
-File* MinixFSInode::open(Dentry* dentry, uint32 flag)
+KernelFileHandle* MinixFSInode::open(Dentry* dentry, uint32 flag)
 {
   debug(M_INODE, "Open file, flag: %x\n", flag);
   assert(ustl::find(i_dentrys_.begin(), i_dentrys_.end(), dentry) != i_dentrys_.end());
-  File* file = (File*) (new MinixFSFile(this, dentry, flag));
-  i_files_.push_back(file);
-  getSuperblock()->fileOpened(file);
-  return file;
+  KernelFileHandle* file_handle = (KernelFileHandle*) (new MinixFSFileHandle(this, dentry, flag));
+  i_file_handles_.push_back(file_handle);
+  getSuperblock()->fileHandleOpened(file_handle);
+  return file_handle;
 }
 
 

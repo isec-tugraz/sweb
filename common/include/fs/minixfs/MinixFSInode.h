@@ -61,7 +61,7 @@ class MinixFSInode : public Inode
     /**
      * Called when a file is opened
      */
-    virtual File* open(Dentry* dentry, uint32 /*flag*/);
+    virtual KernelFileHandle* open(Dentry* dentry, uint32 /*flag*/);
 
     /**
      * creates a directory with the given dentry. It is only used to with directory.

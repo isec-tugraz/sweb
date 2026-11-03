@@ -1,5 +1,5 @@
 #include "fs/ramfs/RamFSInode.h"
-#include "fs/ramfs/RamFSFile.h"
+#include "fs/ramfs/RamFSFileHandle.h"
 #include "fs/ramfs/RamFSSuperblock.h"
 #include "fs/Dentry.h"
 
@@ -7,18 +7,18 @@
 #define ERROR_FF  "ERROR: The flag does not allow this operation"
 #define ERROR_FNO "ERROR: The file is not open."
 
-RamFSFile::RamFSFile(Inode* inode, Dentry* dentry, uint32 flag) :
-    File(inode, dentry, flag)
+RamFSFileHandle::RamFSFileHandle(Inode* inode, Dentry* dentry, uint32 flag) :
+    KernelFileHandle(inode, dentry, flag)
 {
   f_superblock_ = inode->getSuperblock();
   offset_ = 0;
 }
 
-RamFSFile::~RamFSFile()
+RamFSFileHandle::~RamFSFileHandle()
 {
 }
 
-int32 RamFSFile::read(char *buffer, size_t count, l_off_t offset)
+int32 RamFSFileHandle::read(char *buffer, size_t count, l_off_t offset)
 {
   if (((flag_ & O_RDONLY) || (flag_ & O_RDWR)) && (f_inode_->getMode() & A_READABLE))
   {
@@ -33,7 +33,7 @@ int32 RamFSFile::read(char *buffer, size_t count, l_off_t offset)
   }
 }
 
-int32 RamFSFile::write(const char *buffer, size_t count, l_off_t offset)
+int32 RamFSFileHandle::write(const char *buffer, size_t count, l_off_t offset)
 {
   if (((flag_ & O_WRONLY) || (flag_ & O_RDWR)) && (f_inode_->getMode() & A_WRITABLE))
   {
@@ -48,17 +48,17 @@ int32 RamFSFile::write(const char *buffer, size_t count, l_off_t offset)
   }
 }
 
-int32 RamFSFile::open(uint32 __attribute__((unused)) flag)
+int32 RamFSFileHandle::open(uint32 __attribute__((unused)) flag)
 {
   return 0;
 }
 
-int32 RamFSFile::close()
+int32 RamFSFileHandle::close()
 {
   return 0;
 }
 
-int32 RamFSFile::flush()
+int32 RamFSFileHandle::flush()
 {
   return 0;
 }

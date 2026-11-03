@@ -1,11 +1,11 @@
 #include "Inode.h"
 #include "Superblock.h"
 #include "FileSystemType.h"
-#include "File.h"
+#include "KernelFileHandle.h"
 
 Inode::Inode(Superblock *superblock, uint32 inode_type) :
     i_dentrys_(),
-    i_files_(),
+    i_file_handles_(),
     i_nlink_(0),
     i_refcount_(0),
     superblock_(superblock),
@@ -227,11 +227,11 @@ Dentry* Inode::lookup(const char* name)
 }
 
 
-int32 Inode::release(File* file)
+int32 Inode::release(KernelFileHandle* file_handle)
 {
     debug(INODE, "%s inode %p release file\n", getSuperblock()->getFSType()->getFSName(), this);
-    i_files_.remove(file);
-    getSuperblock()->fileReleased(file);
-    delete file;
+    i_file_handles_.remove(file_handle);
+    getSuperblock()->fileHandleReleased(file_handle);
+    delete file_handle;
     return 0;
 }
