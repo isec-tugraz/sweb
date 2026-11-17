@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.12)
 
-file(GLOB util_exe2minixfs_SOURCES *.cpp
+file(GLOB util_exe2minixfs_SOURCES CONFIGURE_DEPENDS *.cpp
                                    ../../common/source/util/Bitmap.cpp
                                    ../../common/source/fs/Inode.cpp
                                    ../../common/source/fs/Dentry.cpp
