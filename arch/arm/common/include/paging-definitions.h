@@ -17,29 +17,29 @@
 
 struct PageDirPageEntry
 {
-  uint32 size                      :2;  // 1:0    | 2
-  uint32 bufferable                :1;  // 2      | 0
-  uint32 cachable                  :1;  // 3      | 0
-  uint32 reserved_3                :1;  // 4      | 0
-  uint32 domain                    :4;  // 8:5    | 0
-  uint32 reserved_2                :1;  // 9      | 0
-  uint32 permissions               :2;  // 11:10  | 1
-  uint32 reserved_1                :8;  // 19:12  | 0
-  uint32 page_ppn                  :12; // 31:20
+  size_t size                      :2;  // 1:0    | 2
+  size_t bufferable                :1;  // 2      | 0
+  size_t cachable                  :1;  // 3      | 0
+  size_t reserved_3                :1;  // 4      | 0
+  size_t domain                    :4;  // 8:5    | 0
+  size_t reserved_2                :1;  // 9      | 0
+  size_t permissions               :2;  // 11:10  | 1
+  size_t reserved_1                :8;  // 19:12  | 0
+  size_t page_ppn                  :12; // 31:20
 } __attribute__((__packed__));
 
 static_assert(sizeof(PageDirPageEntry) == 4, "PageDirPageEntry is not 32 bit");
 
 struct PageDirPageTableEntry
 {
-  uint32 size                      :2;  // 1:0    | 1
-  uint32 bufferable                :1;  // 2      | 0
-  uint32 cachable                  :1;  // 3      | 0
-  uint32 reserved_3                :1;  // 4      | 0
-  uint32 domain                    :4;  // 8:5    | 0
-  uint32 reserved_2                :1;  // 9      | 0
-  uint32 offset                    :2;  // 11:10  | 0 // 4 page tables would fit on 1 page
-  uint32 pt_ppn                    :20; // 31:10
+  size_t size                      :2;  // 1:0    | 1
+  size_t bufferable                :1;  // 2      | 0
+  size_t cachable                  :1;  // 3      | 0
+  size_t reserved_3                :1;  // 4      | 0
+  size_t domain                    :4;  // 8:5    | 0
+  size_t reserved_2                :1;  // 9      | 0
+  size_t offset                    :2;  // 11:10  | 0 // 4 page tables would fit on 1 page
+  size_t pt_ppn                    :20; // 31:10
 } __attribute__((__packed__));
 
 static_assert(sizeof(PageDirPageTableEntry) == 4, "PageDirPageTableEntry is not 32 bit");
@@ -52,12 +52,12 @@ typedef union
 
 typedef struct
 {
-    uint32 size                      :2;  // 1:0    | 2
-    uint32 bufferable                :1;  // 2      | 0
-    uint32 cachable                  :1;  // 3      | 0
-    uint32 permissions               :2;  // 5:4    | 1
-    uint32 reserved                  :6;  // 11:6   | 0
-    uint32 page_ppn                  :20; // 31:12
+  size_t size                      :2;  // 1:0    | 2
+  size_t bufferable                :1;  // 2      | 0
+  size_t cachable                  :1;  // 3      | 0
+  size_t permissions               :2;  // 5:4    | 1
+  size_t reserved                  :6;  // 11:6   | 0
+  size_t page_ppn                  :20; // 31:12
 } __attribute__((__packed__)) PageTableEntry;
 
 static_assert(sizeof(PageTableEntry) == 4, "PageTableEntry is not 32 bit");
