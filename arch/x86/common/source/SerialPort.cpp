@@ -163,8 +163,11 @@ void SerialPort::irq_handler()
     WriteLock = 0;
     break;
   case 2: // Data is available
-    int_id = read_UART( 0 );
-    in_buffer_.put( int_id );
+    do
+    {
+      in_buffer_.put(read_UART(0));
+    }
+    while (read_UART(SC::LSR) & 0x01); // data ready
     break;
   case 3: // Line status changed
     break;
