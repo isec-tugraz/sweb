@@ -5,7 +5,7 @@
 #include "debug_bochs.h"
 #include "VfsSyscall.h"
 #include "ProcessRegistry.h"
-#include "File.h"
+#include "KernelFileHandle.h"
 #include "Scheduler.h"
 
 size_t Syscall::syscallException(size_t syscall_number, size_t arg1, size_t arg2, size_t arg3, size_t arg4, size_t arg5)

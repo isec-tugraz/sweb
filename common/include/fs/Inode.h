@@ -7,7 +7,7 @@
 #include "Dentry.h"
 #include "assert.h"
 
-class File;
+class KernelFileHandle;
 class Superblock;
 
 /**
@@ -44,9 +44,9 @@ class Inode
     ustl::list<Dentry*> i_dentrys_;
 
     /**
-     * The (open) file of this inode.
+     * The open file handles of this inode.
      */
-    ustl::list<File*> i_files_;
+    ustl::list<KernelFileHandle*> i_file_handles_;
 
     /**
      * the number of Dentry links to this inode.
@@ -116,7 +116,7 @@ class Inode
     /**
      * Called when a file is opened
      */
-    virtual File* open(Dentry* /*dentry*/, uint32 /*flag*/)
+    virtual KernelFileHandle* open(Dentry* /*dentry*/, uint32 /*flag*/)
     {
       return 0;
     }
@@ -124,7 +124,7 @@ class Inode
     /**
      * Called when the last reference to a file is closed
      */
-    virtual int32 release(File* /*file*/);
+    virtual int32 release(KernelFileHandle* /*file_handle*/);
 
     /**
      * This should create a symbolic link in the given directory with the given
@@ -261,9 +261,9 @@ class Inode
       return i_dentrys_;
     }
 
-    uint32 getNumOpenedFile()
+    uint32 getNumOpenFileHandles()
     {
-      return i_files_.size();
+      return i_file_handles_.size();
     }
 
     uint32 getSize()

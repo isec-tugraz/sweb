@@ -20,7 +20,7 @@
 #include "RamFSType.h"
 #include "MinixFSType.h"
 #include "VirtualFileSystem.h"
-#include "FileDescriptor.h"
+#include "FileDescriptorTable.h"
 #include "TextConsole.h"
 #include "Terminal.h"
 #include "outerrstream.h"
@@ -79,7 +79,7 @@ extern "C" void startup()
   assert(default_working_dir);
 
   // Important: Initialise global and static objects
-  new (&global_fd_list) FileDescriptorList();
+  new (&global_file_descriptor_table) FileDescriptorTable();
 
   debug(MAIN, "Block Device creation\n");
   BDManager::getInstance()->doDeviceDetection();

@@ -4,7 +4,7 @@
 #include "Console.h"
 #include "Loader.h"
 #include "VfsSyscall.h"
-#include "File.h"
+#include "KernelFileHandle.h"
 #include "PageManager.h"
 #include "ArchThreads.h"
 #include "offsets.h"

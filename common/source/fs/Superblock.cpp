@@ -2,7 +2,7 @@
 #include "assert.h"
 #include "Dentry.h"
 #include "Inode.h"
-#include "File.h"
+#include "KernelFileHandle.h"
 #include "FileSystemType.h"
 
 Superblock::Superblock(FileSystemType* fs_type, size_t s_dev) :
@@ -46,30 +46,30 @@ FileSystemType* Superblock::getFSType()
 }
 
 
-int Superblock::fileOpened(File* file)
+int Superblock::fileHandleOpened(KernelFileHandle* file_handle)
 {
-    Inode* inode = file->getInode();
+    Inode* inode = file_handle->getInode();
     assert(inode->getSuperblock() == this);
 
-    if(ustl::find(s_files_.begin(), s_files_.end(), file) != s_files_.end())
+    if(ustl::find(s_file_handles_.begin(), s_file_handles_.end(), file_handle) != s_file_handles_.end())
     {
         return -1;
     }
 
-    s_files_.push_back(file);
+    s_file_handles_.push_back(file_handle);
     used_inodes_.push_back(inode);
 
     return 0;
 }
 
-int Superblock::fileReleased(File* file)
+int Superblock::fileHandleReleased(KernelFileHandle* file_handle)
 {
-    Inode* inode = file->getInode();
+    Inode* inode = file_handle->getInode();
     assert(inode->getSuperblock() == this);
 
-    s_files_.remove(file);
+    s_file_handles_.remove(file_handle);
 
-    if (inode->getNumOpenedFile() == 0)
+    if (inode->getNumOpenFileHandles() == 0)
     {
         used_inodes_.remove(inode);
     }
@@ -80,13 +80,13 @@ int Superblock::fileReleased(File* file)
 void Superblock::releaseAllOpenFiles()
 {
     debug(SUPERBLOCK, "Releasing all open files\n");
-    while(!s_files_.empty())
+    while(!s_file_handles_.empty())
     {
-        File* file = s_files_.front();
-        file->getInode()->release(file);
+        KernelFileHandle* file_handle = s_file_handles_.front();
+        file_handle->getInode()->release(file_handle);
     }
 
-    assert(s_files_.empty());
+    assert(s_file_handles_.empty());
 }
 
 void Superblock::deleteAllInodes()

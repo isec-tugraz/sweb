@@ -1,7 +1,6 @@
-#include "fs/FileDescriptor.h"
 #include "fs/ramfs/RamFSSuperblock.h"
 #include "fs/ramfs/RamFSInode.h"
-#include "fs/ramfs/RamFSFile.h"
+#include "fs/ramfs/RamFSFileHandle.h"
 #include "fs/ramfs/RamFSType.h"
 #include "fs/Dentry.h"
 #include "assert.h"
