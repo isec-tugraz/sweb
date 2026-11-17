@@ -1,0 +1,98 @@
+name: Build and boot
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  harness:
+    name: Boot-test harness regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s utils/tests -v
+      - run: shellcheck utils/travis_test.sh
+
+  build-and-boot:
+    name: ${{ matrix.architecture }} build and boot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x86_64, x86_32, x86_32_pae, arm_rpi2, armv8_rpi3]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install build and emulator dependencies
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          packages=(cmake make gcc g++ python3 qemu-utils)
+          case "$ARCHITECTURE" in
+            x86_*) packages+=(qemu-system-x86) ;;
+            arm_rpi2) packages+=(gcc-arm-none-eabi binutils-arm-none-eabi qemu-system-arm) ;;
+            armv8_rpi3) packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu qemu-system-arm) ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y "${packages[@]}"
+      - name: Build kernel, userspace, and disk image
+        id: build
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+          CMAKE_BUILD_PARALLEL_LEVEL: '2'
+        run: |
+          mkdir -p "$RUNNER_TEMP/sweb-build"
+          cd "$RUNNER_TEMP/sweb-build"
+          "$GITHUB_WORKSPACE/utils/travis_test.sh" --build-only "$ARCHITECTURE"
+      - name: Boot and exercise shell in QEMU
+        id: boot
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          cd "$RUNNER_TEMP/sweb-build"
+          status=0
+          "$GITHUB_WORKSPACE/utils/travis_test.sh" --boot-only "$ARCHITECTURE" || status=$?
+          if [[ $status == 77 ]]; then
+            echo "::error::Boot test explicitly SKIPPED: required QEMU support is missing. This architecture is unverified."
+          fi
+          exit "$status"
+      - name: Report verification coverage
+        if: always()
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+          BUILD_RESULT: ${{ steps.build.outcome }}
+          BOOT_RESULT: ${{ steps.boot.outcome }}
+        run: |
+          {
+            echo "### $ARCHITECTURE"
+            echo "Build: $BUILD_RESULT"
+            echo "Boot and shell step: $BOOT_RESULT"
+            if [[ -f "$RUNNER_TEMP/sweb-build/ci-logs/result.json" ]]; then
+              echo '```json'
+              cat "$RUNNER_TEMP/sweb-build/ci-logs/result.json"
+              echo '```'
+            else
+              echo 'Boot/shell verification did not produce a result; it is unverified.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload build and QEMU diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ci-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/sweb-build/ci-logs/
+          if-no-files-found: warn
+          retention-days: 14

@@ -26,3 +26,6 @@ cmake-build-*/*
 # OS-specific files
 *.DS_Store
 *Thumbs.db
+
+# Python CI harness
+__pycache__/
