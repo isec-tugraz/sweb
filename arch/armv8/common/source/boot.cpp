@@ -6,22 +6,110 @@
 #include "debug_bochs.h"
 #include "offsets.h"
 
+#pragma GCC diagnostic ignored "-Wattributes"
+
+extern "C" __attribute__((noinline, noreturn)) void arm_boot_main();
+extern "C" __attribute__((noinline, noreturn, used)) void arm_boot_from_el3();
+extern "C" __attribute__((noinline, noreturn, used)) void arm_boot_from_el2();
+extern uint8 boot_stack[];
+
+// Parts of this code are from ARM's "Bare-metal Boot Code for ARMv8-A Processors":
+// http://infocenter.arm.com/help/topic/com.arm.doc.dai0527a/DAI0527A_baremetal_boot_code_for_ARMv8_A_processors.pdf
+extern "C" __attribute__((naked, section(".text.boot"))) void boot_entry()
+{
+    asm volatile(
+        ".global entry\n"
+        "entry:\n"
+        // Only the first core continues booting.
+        "mrs x0, mpidr_el1\n"       // Read the core ID.
+        "and x0, x0, #0xff\n"       // Affinity level 0 identifies the core.
+        "cbz x0, .Lmain_core\n"
+        ".Lsecondary_core_halt:\n"
+        "wfi\n"
+        "b .Lsecondary_core_halt\n"
+        ".Lmain_core:\n"
+        "msr SPSel, #1\n"
+        "adrp x1, boot_stack\n"
+        "add x1, x1, :lo12:boot_stack\n"
+        "add x1, x1, #0x4, lsl #12\n"
+        "mov sp, x1\n"              // C code can now use the current exception-level stack.
+        "mrs x0, CurrentEL\n"       // CurrentEL stores the level in bits 3:2.
+        "and x0, x0, #12\n"
+        "cmp x0, #12\n"
+        "beq arm_boot_from_el3\n"
+        "cmp x0, #8\n"
+        "beq arm_boot_from_el2\n"
+        "b arm_boot_main\n");
+}
+
+extern "C" __attribute__((noinline, noreturn, used)) void arm_boot_from_el3()
+{
+    const size_t boot_stack_top = (((size_t)boot_stack) & ~LINK_BASE) + 0x4000;
+    const size_t resume_address = ((size_t)arm_boot_from_el2) & ~LINK_BASE;
+    const size_t scr_el3 =
+        (1UL << 10) | // RW: EL2 executes in AArch64 mode.
+        (1UL << 8)  | // HCE: enable HVC instructions.
+        (1UL << 7)  | // SMD: disable SMC instructions.
+        (1UL << 0);   // NS: enter the non-secure world.
+    const size_t spsr_el3 =
+        (0xfUL << 6) | // Mask debug, SError, IRQ and FIQ exceptions.
+        0x9;           // Return to EL2h.
+
+    asm volatile("msr CPTR_EL3, xzr"); // Do not trap FP/SIMD instructions at EL3.
+    asm volatile("msr SP_EL2, %0" : : "r"(boot_stack_top));
+    asm volatile("msr SCR_EL3, %0" : : "r"(scr_el3));
+    asm volatile("msr SPSR_EL3, %0" : : "r"(spsr_el3));
+    asm volatile("msr ELR_EL3, %0" : : "r"(resume_address));
+    asm volatile("eret");
+    __builtin_unreachable();
+}
+
+extern "C" __attribute__((noinline, noreturn, used)) void arm_boot_from_el2()
+{
+    const size_t boot_stack_top = (((size_t)boot_stack) & ~LINK_BASE) + 0x4000;
+    const size_t resume_address = ((size_t)arm_boot_main) & ~LINK_BASE;
+
+    size_t timer_control;
+    asm volatile("mrs %0, CNTHCTL_EL2" : "=r"(timer_control));
+    timer_control |= 0b111; // Allow EL1 timer/counter access and enable its event stream.
+    asm volatile("msr CNTHCTL_EL2, %0" : : "r"(timer_control));
+    asm volatile("msr CNTVOFF_EL2, xzr");
+
+    const size_t hcr_el2 =
+        (1UL << 31) | // RW: EL1 executes in AArch64 mode.
+        (1UL << 1);   // SWIO is hardwired on the Pi 3.
+    const size_t sctlr_el1 = 0x30c00800; // Caches and MMU disabled.
+    const size_t spsr_el2 =
+        (0xfUL << 6) | // Mask debug, SError, IRQ and FIQ exceptions.
+        0x5;           // Return to EL1h, using SP_EL1.
+
+    asm volatile("msr CPTR_EL2, xzr"); // Do not trap FP/SIMD instructions at EL2.
+    asm volatile("msr SP_EL1, %0" : : "r"(boot_stack_top));
+    asm volatile("msr HCR_EL2, %0" : : "r"(hcr_el2));
+    asm volatile("msr SCTLR_EL1, %0" : : "r"(sctlr_el1));
+    asm volatile("msr SPSR_EL2, %0" : : "r"(spsr_el2));
+    asm volatile("msr ELR_EL2, %0" : : "r"(resume_address));
+    asm volatile("eret");
+    __builtin_unreachable();
+}
+
 extern "C" void uartWritePostboot(const char *str);
 extern "C" void uartWritePreboot(const char *str);
 extern "C" void setupSerialPort();
 extern "C" void startup();
 extern uint8 bss_start_address;
 extern uint8 bss_end_address;
-extern uint8 boot_stack[];
 extern "C" void blink();
 
-extern "C" void  entry_()
+extern "C" __attribute__((noinline, noreturn)) void arm_boot_main()
 {
-	//set the entry here because the compiler ignores the Naked flag
-    asm(".global cpp_entry \n cpp_entry:");
+	const size_t cpacr_el1 = 0x3UL << 20; // Do not trap FP/SIMD instructions at EL1.
+	asm volatile("msr CPACR_EL1, %0" : : "r"(cpacr_el1));
+	asm volatile("isb");
 
-	//setup stack and frame ptr
-	asm("mov sp, %[v] \n mov x29, sp" : : [v]"r"( (((size_t)boot_stack) & ~LINK_BASE) + 0x4000));
+	size_t vector_table;
+	asm volatile("ldr %0, =Vector_table_el1" : "=r"(vector_table));
+	asm volatile("msr VBAR_EL1, %0" : : "r"(vector_table));
 
 	//init the serial port for debugging
 	setupSerialPort();
@@ -123,16 +211,17 @@ extern "C" void  entry_()
     writeLine2Bochs("finished boot time mapping jumping to startup now\n"); //use mapped mmio now
 
 	//setup mapped stack
-    asm("ldr x0  , =boot_stack");
-    asm("add x0  , x0, #0x4, lsl #12");
-    asm("mov sp  , x0");
-    asm("mov x29 , sp");
+    asm("ldr x0  , =boot_stack\n"
+        "add x0  , x0, #0x4, lsl #12\n"
+        "mov sp  , x0\n"
+        "mov x29 , sp");
 
-    //jump to start function
-	asm("ldr x0 , =startup");
-    asm("blr x0");
+	void (*startup_entry)();
+    asm("ldr %0, =startup" : "=r"(startup_entry));
+    startup_entry();
 
     assert(false && "it should be impossible to get to this point");
+    __builtin_unreachable();
 }
 
 volatile GpioRegisters *gpio_boot = (GpioRegisters*)(GPIO_REGS_BASE);

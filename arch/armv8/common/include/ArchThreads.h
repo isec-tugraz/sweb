@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "ArchThreadRegisters.h"
 
 /**
  * The flag for full barrier synchronization.
@@ -8,23 +9,6 @@
 #ifndef __ATOMIC_SEQ_CST
 #define __ATOMIC_SEQ_CST 5
 #endif
-
-typedef struct
-{
-	size_t q1;
-	size_t q2;
-}NeonQ;
-
-struct ArchThreadRegisters
-{
-	size_t X[31];
-	NeonQ  Q[32];
-	size_t SPSR;
-	size_t ELR;
-	size_t SP;
-	size_t TTBR0;
-	size_t SP_SM;
-};
 
 class Thread;
 class ArchMemory;
