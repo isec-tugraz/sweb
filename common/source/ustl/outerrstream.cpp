@@ -4,17 +4,10 @@
 namespace ustl
 {
 
-coutclass cout_obj;
-coutclass cerr_obj;
+coutclass cout_obj(&kprintf);
+coutclass cerr_obj(&kprintfd);
 coutclass& cout = cout_obj;
 coutclass& cerr = cerr_obj;
-
-void coutclass::init()
-{
-  new (&cout_obj) coutclass(&kprintf);
-  new (&cerr_obj) coutclass(&kprintfd);
-}
-
 
 /// Creates an output string stream linked to the given memory area.
 coutclass::coutclass (void* p __attribute__((unused)), size_t n __attribute__((unused)))

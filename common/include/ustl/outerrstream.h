@@ -14,7 +14,6 @@ namespace ustl {
 ///
 class coutclass : public ostream {
   public:
-    static void init();
     coutclass();
     coutclass(void* p, size_t n);
     coutclass(void(*m_kprintf)(const char*, ...));

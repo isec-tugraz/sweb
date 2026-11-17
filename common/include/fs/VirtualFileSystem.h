@@ -28,7 +28,6 @@ class VirtualFileSystem
     ustl::list<FileSystemType*> file_system_types_;
 
   public:
-    void initialize();
     VirtualFileSystem();
     ~VirtualFileSystem();
 
