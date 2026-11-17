@@ -17,7 +17,7 @@ COMMAND ${PROJECT_BINARY_DIR}/add-dbg ${PROJECT_BINARY_DIR}/kernel.x ${PROJECT_B
 COMMAND touch ${PROJECT_BINARY_DIR}/debug_info.c
 COMMAND ${CMAKE_C_COMPILER} -c ${PROJECT_BINARY_DIR}/debug_info.c -o ${PROJECT_BINARY_DIR}/lib/debug_info.o
 COMMAND "${OBJCOPY_EXECUTABLE}" --add-section .swebdbg="${PROJECT_BINARY_DIR}/kernel.dbg" --set-section-flags .swebdbg=load,data ${PROJECT_BINARY_DIR}/lib/debug_info.o
-COMMAND rm ${PROJECT_BINARY_DIR}/debug_info.c
+COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_BINARY_DIR}/debug_info.c
 )
 
 MACRO(ARCH2OBJ ARCHOBJ_LIBNAME LIBRARY_NAME)
