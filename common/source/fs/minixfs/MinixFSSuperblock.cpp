@@ -15,7 +15,7 @@
 #define ROOT_NAME "/"
 
 MinixFSSuperblock::MinixFSSuperblock(MinixFSType* fs_type, size_t s_dev, uint64 offset) :
-    Superblock(fs_type, s_dev), superblock_(this), offset_(offset)
+    Superblock(fs_type, s_dev), inode_write_lock_("MinixFSSuperblock::inode_write_lock_"), superblock_(this), offset_(offset)
 {
   //read Superblock data from disc
   readHeader();
@@ -72,26 +72,30 @@ void MinixFSSuperblock::initInodes()
   MinixFSInode *root_inode = getInode(1);
   s_root_ = new Dentry(root_inode);
 
-  all_inodes_add_inode(root_inode);
   //read children from disc
   debug(M_SB, "Load children of root inode\n");
   root_inode->loadChildren();
 }
 
-MinixFSInode* MinixFSSuperblock::getInode(uint16 i_num, bool &is_already_loaded)
-{
-  MinixFSInode* tmp = (MinixFSInode*) all_inodes_set_[i_num];
-  if (tmp)
-  {
-    is_already_loaded = true;
-    return tmp;
-  }
-  tmp = getInode(i_num);
-  return tmp;
-}
-
 MinixFSInode* MinixFSSuperblock::getInode(uint16 i_num)
 {
+  ScopeLock lock(superblock_lock_);
+  auto it = all_inodes_set_.find(i_num);
+  if (it != all_inodes_set_.end())
+    return (MinixFSInode*) it->second;
+
+  MinixFSInode* inode = loadInode(i_num);
+  if (inode)
+  {
+    all_inodes_.push_back(inode);
+    all_inodes_set_[i_num] = inode;
+  }
+  return inode;
+}
+
+MinixFSInode* MinixFSSuperblock::loadInode(uint16 i_num)
+{
+  assert(superblock_lock_.isHeldByCurrentThread());
   debug(M_SB, "getInode::called with i_num: %d\n", i_num);
 
   if (i_num >= storage_manager_->getNumUsedInodes())
@@ -133,21 +137,13 @@ MinixFSInode* MinixFSSuperblock::getInode(uint16 i_num)
 MinixFSSuperblock::~MinixFSSuperblock()
 {
   debug(M_SB, "~MinixSuperblock\n");
-  assert(dirty_inodes_.empty() == true);
   storage_manager_->flush(this);
 
   releaseAllOpenFiles();
 
   debug(M_SB, "Open files released\n");
-  if (M_SB & OUTPUT_ENABLED)
-  {
-    for (auto it : all_inodes_)
-      debug(M_SB, "Inode: %p\n", it);
-  }
-
   // Also writes back inodes to disk
   deleteAllInodes();
-  all_inodes_set_.clear();
 
   delete storage_manager_;
 
@@ -156,6 +152,7 @@ MinixFSSuperblock::~MinixFSSuperblock()
 
 Inode* MinixFSSuperblock::createInode(uint32 type)
 {
+  ScopeLock lock(superblock_lock_);
   uint16 mode = 0x01ff;
   if (type == I_FILE)
     mode |= 0x8000;
@@ -168,16 +165,18 @@ Inode* MinixFSSuperblock::createInode(uint32 type)
   uint32 i_num = storage_manager_->allocInode();
   debug(M_SB, "createInode> acquired inode %d mode: %d\n", i_num, mode);
   Inode *inode = new MinixFSInode(this, mode, 0, 0, zones, i_num);
+  all_inodes_.push_back(inode);
+  all_inodes_set_[i_num] = inode;
   debug(M_SB, "createInode> created Inode\n");
-  all_inodes_add_inode(inode);
   debug(M_SB, "createInode> calling write Inode to Disc\n");
-  writeInode(inode);
+  writeInodeLocked(inode);
   debug(M_SB, "createInode> finished\n");
   return inode;
 }
 
 int32 MinixFSSuperblock::readInode(Inode* inode)
 {
+  ScopeLock lock(superblock_lock_);
   assert(inode);
   MinixFSInode *minix_inode = (MinixFSInode *) inode;
   assert(ustl::find(all_inodes_.begin(), all_inodes_.end(), inode) != all_inodes_.end());
@@ -203,8 +202,9 @@ int32 MinixFSSuperblock::readInode(Inode* inode)
   return 0;
 }
 
-void MinixFSSuperblock::writeInode(Inode* inode)
+void MinixFSSuperblock::writeInodeLocked(Inode* inode)
 {
+  assert(superblock_lock_.isHeldByCurrentThread());
   assert(inode);
   assert(ustl::find(all_inodes_.begin(), all_inodes_.end(), inode) != all_inodes_.end());
   //flush zones
@@ -245,25 +245,20 @@ void MinixFSSuperblock::writeInode(Inode* inode)
   minix_inode->i_zones_->flush(minix_inode->i_num_);
 }
 
-void MinixFSSuperblock::all_inodes_add_inode(Inode* inode)
+void MinixFSSuperblock::removeInodeLocked(Inode* inode)
 {
-  all_inodes_.push_back(inode);
-  all_inodes_set_[((MinixFSInode*) inode)->i_num_] = inode;
-}
-
-void MinixFSSuperblock::all_inodes_remove_inode(Inode* inode)
-{
-  all_inodes_.remove(inode);
+  assert(superblock_lock_.isHeldByCurrentThread());
+  Superblock::removeInodeLocked(inode);
   all_inodes_set_.erase(((MinixFSInode*) inode)->i_num_);
 }
 
 void MinixFSSuperblock::deleteInode(Inode* inode)
 {
+  ScopeLock lock(superblock_lock_);
   assert(inode->getDentrys().size() == 0);
-  assert(ustl::find(used_inodes_.begin(), used_inodes_.end(), inode) == used_inodes_.end());
-  dirty_inodes_.remove(inode);
+  assert(inode->numRefs() == 0);
   MinixFSInode *minix_inode = (MinixFSInode *) inode;
-  all_inodes_remove_inode(minix_inode);
+  removeInodeLocked(inode);
   assert(minix_inode->i_files_.empty());
   minix_inode->i_zones_->freeZones();
   storage_manager_->freeInode(minix_inode->i_num_);
@@ -337,6 +332,7 @@ int32 MinixFSSuperblock::readBytes(uint32 block, uint32 offset, uint32 size, cha
 
 int32 MinixFSSuperblock::writeBytes(uint32 block, uint32 offset, uint32 size, char* buffer)
 {
+  ScopeLock lock(inode_write_lock_);
   assert(offset+size <= BLOCK_SIZE);
   char wbuffer[BLOCK_SIZE];
   readBlocks(block, 1, wbuffer);

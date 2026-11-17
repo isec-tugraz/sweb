@@ -17,6 +17,7 @@ public:
   void release(pointer = 0){};
 
   bool isFree(){ return true; };
+  bool isHeldByCurrentThread() const { return true; }
 };
 
 #endif

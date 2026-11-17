@@ -230,8 +230,5 @@ Dentry* Inode::lookup(const char* name)
 int32 Inode::release(File* file)
 {
     debug(INODE, "%s inode %p release file\n", getSuperblock()->getFSType()->getFSName(), this);
-    i_files_.remove(file);
-    getSuperblock()->fileReleased(file);
-    delete file;
-    return 0;
+    return getSuperblock()->releaseFile(file);
 }

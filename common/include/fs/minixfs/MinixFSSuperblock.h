@@ -34,28 +34,10 @@ class MinixFSSuperblock : public Superblock
     virtual int32 readInode(Inode* inode);
 
     /**
-     * writes the inode from the mounted file system
-     * @param inode the inode to write
-     */
-    virtual void writeInode(Inode* inode);
-
-    /**
      * removes one inode from the file system and frees all its resources
      * @param inode the inode to delete
      */
     virtual void deleteInode(Inode* inode);
-
-    /**
-     * add an inode to the all_inodes_ data structures
-     * @param inode to add
-     */
-    void all_inodes_add_inode(Inode* inode);
-
-    /**
-     * remove an inode to the all_inodes_ data structures
-     * @param inode to remove
-     */
-    void all_inodes_remove_inode(Inode* inode);
 
     /**
      * allocates one zone on the file system
@@ -71,23 +53,15 @@ class MinixFSSuperblock : public Superblock
 
   protected:
 
+    void writeInodeLocked(Inode* inode) override;
+    void removeInodeLocked(Inode* inode) override;
+
     /**
-     * creates an Inode object with the given number from the file system
+     * returns the cached inode or loads and caches it from the file system
      * @param i_num the inode number
      * @return the Inode object
      */
     MinixFSInode *getInode(uint16 i_num);
-
-    /**
-     * creates an Inode object with the given number from the file system
-     * this overloaded version should be used; directories usually have
-     * "." and ".." entries, which are pointing to already loaded inodes!!!
-     * by now this method is only called from MinixFSInode::loadChildren
-     * @param i_num the inode number
-     * @param is_already_loaded should be set to true if already loaded
-     * @return the Inode object
-     */
-    MinixFSInode *getInode(uint16 i_num, bool &is_already_loaded);
 
     /**
      * reads one Zone from the file system to the given buffer
@@ -147,6 +121,8 @@ class MinixFSSuperblock : public Superblock
     void readHeader();
   private:
 
+    MinixFSInode *loadInode(uint16 i_num);
+
     /**
      * reads the root inode and its children from the filesystem
      */
@@ -187,6 +163,9 @@ class MinixFSSuperblock : public Superblock
 
 
     ustl::map<uint32, Inode*> all_inodes_set_;
+
+    // Serializes inode updates that share a disk block.
+    Mutex inode_write_lock_;
 
     /**
      * pointer to self for compatability

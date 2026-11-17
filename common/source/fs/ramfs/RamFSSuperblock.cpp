@@ -20,8 +20,6 @@ RamFSSuperblock::RamFSSuperblock(RamFSType* fs_type, uint32 s_dev) :
 
 RamFSSuperblock::~RamFSSuperblock()
 {
-  assert(dirty_inodes_.empty() == true);
-
   releaseAllOpenFiles();
 
   deleteAllInodes();
@@ -32,12 +30,14 @@ Inode* RamFSSuperblock::createInode(uint32 type)
     debug(RAMFS, "createInode, type: %x\n", type);
     auto inode = new RamFSInode(this, type);
 
+    ScopeLock lock(superblock_lock_);
     all_inodes_.push_back(inode);
     return inode;
 }
 
 int32 RamFSSuperblock::readInode(Inode* inode)
 {
+  ScopeLock lock(superblock_lock_);
   assert(inode);
 
   if (ustl::find(all_inodes_, inode) == all_inodes_.end())
@@ -47,8 +47,9 @@ int32 RamFSSuperblock::readInode(Inode* inode)
   return 0;
 }
 
-void RamFSSuperblock::writeInode(Inode* inode)
+void RamFSSuperblock::writeInodeLocked(Inode* inode)
 {
+  assert(superblock_lock_.isHeldByCurrentThread());
   assert(inode);
 
   if (ustl::find(all_inodes_, inode) == all_inodes_.end())
@@ -59,6 +60,5 @@ void RamFSSuperblock::writeInode(Inode* inode)
 
 void RamFSSuperblock::deleteInode(Inode* inode)
 {
-  all_inodes_.remove(inode);
-  delete inode;
+  Superblock::deleteInode(inode);
 }

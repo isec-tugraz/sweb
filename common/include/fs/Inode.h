@@ -40,6 +40,8 @@ class Superblock;
 
 class Inode
 {
+    friend class Superblock;
+
   protected:
     ustl::list<Dentry*> i_dentrys_;
 
@@ -56,7 +58,7 @@ class Inode
     /**
      * the number of runtime references to this inode (loaded Dentrys, open files, ...)
      */
-    uint32 i_refcount_;
+    ustl::atomic<uint32> i_refcount_;
 
     Superblock *superblock_;
 

@@ -33,13 +33,6 @@ class RamFSSuperblock : public Superblock
     virtual int32 readInode ( Inode* inode );
 
     /**
-     * This method is called to write a specific inode to a mounted file-system,
-     * and gets called on inodes which have been marked dirty.
-     * @param inode the inode to write
-     */
-    virtual void writeInode ( Inode* inode );
-
-    /**
      * This method is called whenever the reference count on an inode reaches 0,
      * and it is found that the link count (i_nlink= is also zero. It is
      * presumed that the file-system will deal with this situation be
@@ -48,6 +41,9 @@ class RamFSSuperblock : public Superblock
      * @param inode the inode to delete
      */
     virtual void deleteInode ( Inode* inode );
+
+  protected:
+    void writeInodeLocked(Inode* inode) override;
 };
 //-----------------------------------------------------------------------------
 

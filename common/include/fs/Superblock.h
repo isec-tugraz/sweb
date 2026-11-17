@@ -1,6 +1,8 @@
 #pragma once
 
 #include "types.h"
+#include "Mutex.h"
+#include "ScopeLock.h"
 #include <ulist.h>
 
 class Iattr;
@@ -27,6 +29,14 @@ class Superblock
     uint64 s_magic_;
 
   protected:
+
+    // Protects the inode lists and the derived filesystem's inode cache.
+    Mutex superblock_lock_;
+    Mutex files_lock_;
+
+    int releaseFileLocked(File* file);
+    virtual void writeInodeLocked(Inode* inode) = 0;
+    virtual void removeInodeLocked(Inode* inode);
 
     const FileSystemType *s_type_;
 
@@ -114,9 +124,7 @@ class Superblock
      * and gets called on inodes which have been marked dirty.
      * @param inode the inode to write
      */
-    virtual void writeInode(Inode* /*inode*/)
-    {
-    }
+    void writeInode(Inode* inode);
 
     /**
      * This method is called whenever the reference count on an inode reaches 0,
@@ -130,7 +138,7 @@ class Superblock
 
 
     virtual int fileOpened(File* file);
-    virtual int fileReleased(File* file);
+    virtual int releaseFile(File* file);
 
     virtual void releaseAllOpenFiles();
     virtual void deleteAllInodes();
