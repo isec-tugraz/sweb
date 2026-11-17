@@ -10,9 +10,11 @@
 #include "offsets.h"
 #include "Scheduler.h"
 
-UserProcess::UserProcess(ustl::string filename, FileSystemInfo *fs_info, uint32 terminal_number) :
+UserProcess::UserProcess(ustl::string filename, FileSystemInfo *fs_info,
+                         int& creation_status, uint32 terminal_number) :
     Thread(fs_info, filename, Thread::USER_THREAD), fd_(VfsSyscall::open(filename, O_RDONLY))
 {
+  creation_status = -1;
   ProcessRegistry::instance()->processStart(); //should also be called if you fork a process
 
   if (fd_ >= 0)
@@ -41,6 +43,7 @@ UserProcess::UserProcess(ustl::string filename, FileSystemInfo *fs_info, uint32 
     setTerminal(main_console->getTerminal(terminal_number));
 
   switch_to_userspace_ = 1;
+  creation_status = 0;
 }
 
 UserProcess::~UserProcess()

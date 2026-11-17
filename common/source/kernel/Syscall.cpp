@@ -165,7 +165,7 @@ size_t Syscall::createprocess(size_t path, size_t sleep)
   // parameter check end
 
   size_t process_count = ProcessRegistry::instance()->processCount();
-  ProcessRegistry::instance()->createProcess((const char*) path);
+  int status = ProcessRegistry::instance()->createProcess((const char*) path);
   if (sleep)
   {
     while (ProcessRegistry::instance()->processCount() > process_count) // please note that this will fail ;)
@@ -173,7 +173,7 @@ size_t Syscall::createprocess(size_t path, size_t sleep)
       Scheduler::instance()->yield();
     }
   }
-  return 0;
+  return status;
 }
 
 void Syscall::trace()
