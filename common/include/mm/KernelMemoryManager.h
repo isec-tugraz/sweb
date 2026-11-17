@@ -89,7 +89,7 @@ class KernelMemoryManager
      * checks if the given address points to an actual memory segment and marks it unused
      * if possible it tries to merge with the free segments around it
      * @param virtual_address memory address that was originally returned by allocateMemory
-     * @return true if segment was freed or false if address was wrong
+     * @return true if the segment was freed, false for a null pointer
      */
     bool freeMemory(pointer virtual_address, pointer called_by);
 

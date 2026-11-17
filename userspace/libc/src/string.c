@@ -111,7 +111,7 @@ void *memset(void *position, int value, size_t number_of_bytes)
  * @param str String
  * @return length of String
  */
-size_t strlen(const char* str) 
+size_t strlen(const char* str)
 {
   size_t count=0;
   while(str[count] != '\0')
@@ -120,11 +120,29 @@ size_t strlen(const char* str)
 }
 
 /**
+ * Gets the length of the null terminated string
+ * Returns 0 if str is a null pointer
+ * Returns strsz if no null character is found within the first strsz bytes of str
+ *
+ * @param str String
+ * @return length of String
+ */
+size_t strnlen_s(const char *str, size_t strsz)
+{
+  if (!str)
+    return 0;
+
+  size_t i = 0;
+  while (i < strsz && str[i])
+    ++i;
+  return i;
+}
+
+/**
  * Compares the 2 Strings, default implementation
  */
 int strcmp (const char * l, const char * r)
 {
- 
     for(; *l == *r; ++l, ++r)
         if(*l == 0)
             return 0;

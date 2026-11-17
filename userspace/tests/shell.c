@@ -268,7 +268,10 @@ void readCommand() {
     }
   }
   buffer[SHELL_BUFFER_SIZE - 1] = 0;
-  memcpy(last_command, buffer, SHELL_BUFFER_SIZE);
+
+  if (buffer[0]) {
+    memcpy(last_command, buffer, SHELL_BUFFER_SIZE);
+  }
 }
 
 void handleCommand() {
@@ -350,7 +353,9 @@ int main(int argc, char* argv[]) {
             (size_t)dir_content, sizeof(dir_content), 0, 0);
   while(running) {
     readCommand();
-    handleCommand();
+    if (buffer[0]) {
+      handleCommand();
+    }
   }
   return exit_code;
 }
