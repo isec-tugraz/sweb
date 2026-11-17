@@ -82,6 +82,17 @@ extern void *memset(void *position, int value, size_t number_of_bytes);
 extern size_t strlen(const char* str);
 
 /**
+ * Gets the length of the null terminated string
+ * Returns 0 if str is a null pointer
+ * Returns strsz if no null character is found within the first strsz bytes of str
+ *
+ * @param str String
+ * @param strsz Maximum number of bytes to examine
+ * @return length of String
+ */
+extern size_t strnlen_s(const char *str, size_t strsz);
+
+/**
  * Compares the 2 Strings, default implementation
  */
 extern int strcmp (const char * l, const char * r);
@@ -94,6 +105,3 @@ extern char *strstr(const char *haystack, const char *needle);
 #ifdef __cplusplus
 }
 #endif
-
-
-
